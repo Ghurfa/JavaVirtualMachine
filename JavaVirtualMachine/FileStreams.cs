@@ -36,7 +36,7 @@ namespace JavaVirtualMachine
 
         public static int AvailableBytesFromConsole()
         {
-            return ConsoleInputReader.EndOfStream ? 0 : 1;
+            return 0;
         }
 
         public static void Close(string file)
