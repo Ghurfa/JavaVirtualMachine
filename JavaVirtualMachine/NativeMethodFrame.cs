@@ -2,6 +2,7 @@
 using JavaVirtualMachine.ConstantPoolInfo;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -157,8 +158,13 @@ namespace JavaVirtualMachine
 
                     if (handle == 1)
                     {
-                        string stringToPrint = Encoding.UTF8.GetString((byte[])bytes.Array, offset, length);
-                        Console.Write(stringToPrint);
+                        //string stringToPrint = Encoding.UTF8.GetString((byte[])bytes.Array, offset, length);
+                        //Console.Write(stringToPrint);
+                        FileStreams.WriteBytesToConsole((byte[])bytes.Array, offset, length);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
                     }
 
                     Utility.ReturnVoid();
@@ -190,7 +196,7 @@ namespace JavaVirtualMachine
                     ClassFile FileCFile = ClassFileManager.GetClassFile("java/io/File");
                     MethodInfo getPathMethod = FileCFile.MethodDictionary[("getPath", "()Ljava/lang/String;")];
                     Utility.RunJavaFunction(getPathMethod, Args[1]);
-                    string path = Utility.ReadJavaString(Utility.PopInt(Stack, ref sp));
+                    string path = Utility.ReadJavaString((int)Utility.PopInt(Stack, ref sp));
 
                     try
                     {
@@ -602,9 +608,9 @@ namespace JavaVirtualMachine
                     string name = Utility.ReadJavaString(Args[0]);
                     ClassFile systemCFile = ClassFileManager.GetClassFile("java/lang/System");
                     MethodInfo getPropMethod = systemCFile.MethodDictionary[("getProperty", "(Ljava/lang/String;)Ljava/lang/String;")];
-                    Stack = new int[1];
+                    Stack = new uint[1];
                     Utility.RunJavaFunction(getPropMethod, Utility.CreateJavaStringLiteral("java.library.path"));
-                    int libPathAddr = Utility.PopInt(Stack, ref sp);
+                    int libPathAddr = (int)Utility.PopInt(Stack, ref sp);
                     string libPath = Utility.ReadJavaString(libPathAddr);
                     Utility.ReturnValue(Utility.CreateJavaStringLiteral(libPath + name));
                     return;
@@ -766,7 +772,7 @@ namespace JavaVirtualMachine
                 else if (className == "java/lang/System" && nameAndDescriptor == ("initProperties", "(Ljava/util/Properties;)Ljava/util/Properties;"))
                 {
                     HeapObject propertiesObject = Heap.GetObject(Args[0]);
-                    Stack = new int[1];
+                    Stack = new uint[1];
 
                     //Complete list: https://docs.oracle.com/javase/8/docs/api/java/lang/System.html#getProperties--
 
@@ -810,6 +816,12 @@ namespace JavaVirtualMachine
                     string libName = Utility.ReadJavaString(Args[0]);
                     string mappedName = libName.Replace('.', '/');
                     Utility.ReturnValue(Utility.CreateJavaStringLiteral(mappedName));
+                    return;
+                }
+                else if(className == "java/lang/System" && nameAndDescriptor == ("nanoTime", "()J"))
+                {
+                    long nanoTime = Program.Stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond * 345365667;
+                    Utility.ReturnLargeValue(nanoTime);
                     return;
                 }
                 else if (className == "java/lang/System" && nameAndDescriptor == ("registerNatives", "()V"))
@@ -934,34 +946,34 @@ namespace JavaVirtualMachine
                     //Runs the "run" function of the action
                     //Enables privileges?
                     //Returns result of the "run"
-                    Stack = new int[1];
+                    Stack = new uint[1];
                     HeapObject privilegedAction = Heap.GetObject(Args[0]);
                     MethodInfo method = privilegedAction.ClassFile.MethodDictionary[("run", "()Ljava/lang/Object;")];
 
                     Utility.RunJavaFunction(method, Args);
                     //methodFrame.Execute returns to this NativeMethodFrame's stack
-                    Utility.ReturnValue(Utility.PopInt(Stack, ref sp));
+                    Utility.ReturnValue((int)Utility.PopInt(Stack, ref sp));
                     return;
                 }
                 else if (className == "java/security/AccessController" && nameAndDescriptor == ("doPrivileged", "(Ljava/security/PrivilegedAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;"))
                 {
-                    Stack = new int[1];
+                    Stack = new uint[1];
                     HeapObject privilegedAction = Heap.GetObject(Args[0]);
                     MethodInfo method = privilegedAction.ClassFile.MethodDictionary[("run", "()Ljava/lang/Object;")];
 
                     Utility.RunJavaFunction(method, Args[0]);
-                    Utility.ReturnValue(Utility.PopInt(Stack, ref sp));
+                    Utility.ReturnValue((int)Utility.PopInt(Stack, ref sp));
                     return;
                 }
                 else if (className == "java/security/AccessController" && nameAndDescriptor == ("doPrivileged", "(Ljava/security/PrivilegedExceptionAction;)Ljava/lang/Object;"))
                 {
-                    Stack = new int[1];
+                    Stack = new uint[1];
                     HeapObject privilegedExceptionAction = Heap.GetObject(Args[0]);
                     MethodInfo method = privilegedExceptionAction.ClassFile.MethodDictionary[("run", "()Ljava/lang/Object;")];
                     //DebugWriter.CallFuncDebugWrite(privilegedExceptionAction.ClassObject.Name, "run", Args);
                     Utility.RunJavaFunction(method, Args);
                     //methodFrame.Execute returns to this NativeMethodFrame's stack
-                    Utility.ReturnValue(Utility.PopInt(Stack, ref sp));
+                    Utility.ReturnValue((int)Utility.PopInt(Stack, ref sp));
                     return;
                 }
                 else if (className == "java/security/AccessController" && nameAndDescriptor == ("getStackAccessControlContext", "()Ljava/security/AccessControlContext;"))
@@ -1423,14 +1435,14 @@ namespace JavaVirtualMachine
                     ClassFile constructorClassFile = ClassFileManager.GetClassFile("java/lang/reflect/Constructor");
                     MethodInfo getDeclaringClassMethod = constructorClassFile.MethodDictionary[("getDeclaringClass", "()Ljava/lang/Class;")];
                     Utility.RunJavaFunction(getDeclaringClassMethod, constructorAddr);
-                    int declaringClassClassObjAddr = Utility.PopInt(Stack, ref sp);
+                    int declaringClassClassObjAddr = (int)Utility.PopInt(Stack, ref sp);
                     HeapObject declaringClassClassObj = Heap.GetObject(declaringClassClassObjAddr);
                     FieldReferenceValue declaringClassName = (FieldReferenceValue)declaringClassClassObj.GetField("name", "Ljava/lang/String;");
                     ClassFile declaringClass = ClassFileManager.GetClassFile(Utility.ReadJavaString(declaringClassName));
 
                     MethodInfo getSlotMethod = constructorClassFile.MethodDictionary[("getSlot", "()I")];
                     Utility.RunJavaFunction(getSlotMethod, constructorAddr);
-                    int slot = Utility.PopInt(Stack, ref sp);
+                    int slot = (int)Utility.PopInt(Stack, ref sp);
 
                     MethodInfo constructorMethod = null;
                     int i = 0;
@@ -1493,7 +1505,7 @@ namespace JavaVirtualMachine
                 if (Program.MethodFrameStack.Count > 1)
                 {
                     MethodFrame parentFrame = Program.MethodFrameStack.Peek(1);
-                    parentFrame.Stack = new int[parentFrame.Stack.Length];
+                    parentFrame.Stack = new uint[parentFrame.Stack.Length];
                     Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, Utility.PopInt(Stack, ref sp)); //push address of exception onto parent stack
                 }
                 Program.MethodFrameStack.Pop();

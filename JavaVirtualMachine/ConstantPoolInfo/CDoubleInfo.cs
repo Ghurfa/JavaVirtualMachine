@@ -8,16 +8,16 @@ namespace JavaVirtualMachine.ConstantPoolInfo
     {
         public uint HighBytes { get; private set; }
         public uint LowBytes { get; private set; }
-        public readonly long LongValue;
+        public readonly ulong LongValue;
         public readonly double DoubleValue;
         public CDoubleInfo(ref ReadOnlySpan<byte> span) : base(ref span)
         {
             HighBytes = span.ReadFour();
             LowBytes = span.ReadFour();
-            LongValue = ((long)HighBytes << 32) | LowBytes;
+            LongValue = (HighBytes, LowBytes).ToULong();
             unsafe
             {
-                long temp = LongValue;
+                ulong temp = LongValue;
                 DoubleValue = *(double*)(&temp);
             }
         }
