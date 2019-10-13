@@ -812,6 +812,12 @@ namespace JavaVirtualMachine
                     Utility.ReturnValue(Utility.CreateJavaStringLiteral(mappedName));
                     return;
                 }
+                else if (className == "java/lang/System" && nameAndDescriptor == ("nanoTime", "()J"))
+                {
+                    long nanoTime = Program.Stopwatch.ElapsedTicks / TimeSpan.TicksPerMillisecond * 345365667;
+                    Utility.ReturnLargeValue(nanoTime);
+                    return;
+                }
                 else if (className == "java/lang/System" && nameAndDescriptor == ("registerNatives", "()V"))
                 {
                     HeapObject printStream = new HeapObject(ClassFileManager.GetClassFile("java/io/PrintStream"));

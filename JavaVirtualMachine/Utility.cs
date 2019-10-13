@@ -6,21 +6,7 @@ using System.Text;
 
 namespace JavaVirtualMachine
 {
-    public enum ReturnType
-    {
-        @byte,
-        @char,
-        @double,
-        @float,
-        @int,
-        @long,
-        reference,
-        @short,
-        boolean,
-        array,
-        @void
-    }
-    static class Utility
+    public static class Utility
     {
         public static ushort SwapEndian(this ref ushort data) => data = (ushort)((data << 8) | (data >> 8));
         public static uint SwapEndian(this ref uint data) => data = ((data << 24) | ((data << 8) & 0xFF0000) | ((data >> 8) & 0xFF00) | (data >> 24));

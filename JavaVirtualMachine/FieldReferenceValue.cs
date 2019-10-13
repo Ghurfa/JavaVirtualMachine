@@ -4,7 +4,7 @@ using System.Text;
 
 namespace JavaVirtualMachine
 {
-    class FieldReferenceValue : FieldValue
+    public class FieldReferenceValue : FieldValue
     {
         public int Address;
         public FieldReferenceValue(int address)

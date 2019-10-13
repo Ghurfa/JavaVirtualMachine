@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JavaVirtualMachine
 {
-    static class DebugWriter
+    public static class DebugWriter
     {
         public static int Depth = 0;
         public static bool WriteDebugMessages = false;

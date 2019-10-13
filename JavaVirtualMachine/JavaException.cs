@@ -4,7 +4,7 @@ using System.Text;
 
 namespace JavaVirtualMachine
 {
-    class JavaException : InvalidOperationException
+    public class JavaException : InvalidOperationException
     {
         public ClassFile ClassFile;
         public MethodFrame[] Stack;

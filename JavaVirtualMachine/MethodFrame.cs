@@ -489,7 +489,7 @@ namespace JavaVirtualMachine
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                if(array.Array is byte[] byteArr)
+                                if (array.Array is byte[] byteArr)
                                 {
                                     Utility.Push(ref Stack, ref sp, (byteArr)[index]);
                                 }
@@ -519,7 +519,7 @@ namespace JavaVirtualMachine
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
-                                } 
+                                }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 Utility.Push(ref Stack, ref sp, ((short[])array.Array)[index]);
                             }
@@ -800,7 +800,7 @@ namespace JavaVirtualMachine
                             {
                                 int second = Utility.PopInt(Stack, ref sp);
                                 int first = Utility.PopInt(Stack, ref sp);
-                                if(second == 0)
+                                if (second == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/ArithmeticException");
                                 }
@@ -811,6 +811,10 @@ namespace JavaVirtualMachine
                             {
                                 long second = Utility.PopLong(Stack, ref sp);
                                 long first = Utility.PopLong(Stack, ref sp);
+                                if (second == 0)
+                                {
+                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                }
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
                             break;
@@ -818,6 +822,10 @@ namespace JavaVirtualMachine
                             {
                                 float second = Utility.PopFloat(Stack, ref sp);
                                 float first = Utility.PopFloat(Stack, ref sp);
+                                if (second == 0)
+                                {
+                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                }
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
                             break;
@@ -825,6 +833,10 @@ namespace JavaVirtualMachine
                             {
                                 double second = Utility.PopDouble(Stack, ref sp);
                                 double first = Utility.PopDouble(Stack, ref sp);
+                                if (second == 0)
+                                {
+                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                }
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
                             break;
@@ -832,6 +844,10 @@ namespace JavaVirtualMachine
                             {
                                 int second = Utility.PopInt(Stack, ref sp);
                                 int first = Utility.PopInt(Stack, ref sp);
+                                if (second == 0)
+                                {
+                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                }
                                 Utility.Push(ref Stack, ref sp, first % second);
                             }
                             break;
@@ -839,7 +855,14 @@ namespace JavaVirtualMachine
                             {
                                 long second = Utility.PopLong(Stack, ref sp);
                                 long first = Utility.PopLong(Stack, ref sp);
-                                Utility.Push(ref Stack, ref sp, first % second);
+                                if (second == 0)
+                                {
+                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                }
+                                else
+                                {
+                                    Utility.Push(ref Stack, ref sp, first % second);
+                                }
                             }
                             break;
                         case OpCodes.frem:
@@ -856,12 +879,11 @@ namespace JavaVirtualMachine
                                 Utility.Push(ref Stack, ref sp, first % second);
                             }
                             break;
-                        case OpCodes.ineg:
-                            Stack[sp - 1] = ~Stack[sp - 1];
+                        case OpCodes.ineg: //arithmetic negation, not bitwise
+                            Stack[sp - 1] = -Stack[sp - 1];
                             break;
                         case OpCodes.lneg:
-                            Stack[sp - 2] = ~Stack[sp - 2];
-                            Stack[sp - 1] = ~Stack[sp - 1];
+                            Utility.Push(ref Stack, ref sp, -Utility.PopLong(Stack, ref sp));
                             break;
                         case OpCodes.ishl:
                             {
@@ -879,27 +901,30 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.ishr:
                             {
-                                int second = Utility.PopInt(Stack, ref sp);
-                                int first = Utility.PopInt(Stack, ref sp);
-                                Utility.Push(ref Stack, ref sp, (first >> second) | ((first >> 31) << 31));
-                                if (((first >> second) | ((first >> 31) << 31)) != (first >> second))
-                                {
-
-                                }
+                                int shiftBy = Utility.PopInt(Stack, ref sp);
+                                int num = Utility.PopInt(Stack, ref sp);
+                                Utility.Push(ref Stack, ref sp, num >> shiftBy);
+                            }
+                            break;
+                        case OpCodes.lshr:
+                            {
+                                int shiftBy = Utility.PopInt(Stack, ref sp);
+                                long num = Utility.PopLong(Stack, ref sp);
+                                Utility.Push(ref Stack, ref sp, num >> shiftBy);
                             }
                             break;
                         case OpCodes.iushr:
                             {
-                                int second = Utility.PopInt(Stack, ref sp);
-                                int first = Utility.PopInt(Stack, ref sp);
-                                if (first < 0)
-                                {
-                                    Utility.Push(ref Stack, ref sp, -(-first >> second));
-                                }
-                                else
-                                {
-                                    Utility.Push(ref Stack, ref sp, first >> second);
-                                }
+                                int shiftBy = Utility.PopInt(Stack, ref sp);
+                                int num = Utility.PopInt(Stack, ref sp);
+                                Utility.Push(ref Stack, ref sp, (int)((uint)num >> shiftBy));
+                            }
+                            break;
+                        case OpCodes.lushr:
+                            {
+                                int shiftBy = Utility.PopInt(Stack, ref sp);
+                                long num = Utility.PopLong(Stack, ref sp);
+                                Utility.Push(ref Stack, ref sp, (long)((ulong)num >> shiftBy));
                             }
                             break;
                         case OpCodes.iand:

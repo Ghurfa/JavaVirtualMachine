@@ -7,7 +7,7 @@ using System.Text;
 
 namespace JavaVirtualMachine
 {
-    static class ClassFileManager
+    public static class ClassFileManager
     {
         private static Dictionary<string, (string path, ClassFile classFile, bool isStaticLoaded)> classFiles;
         private static string javaClassesFilePath;
