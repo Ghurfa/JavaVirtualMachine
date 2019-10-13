@@ -233,8 +233,8 @@ namespace JavaVirtualMachine
     {
         public readonly ushort MaxStack;
         public readonly ushort MaxLocals;
-        public uint[] Stack;
-        public uint[] Locals;
+        public int[] Stack;
+        public int[] Locals;
         public readonly ReadOnlyMemory<byte> Code;
         public readonly ExceptionHandlerInfo[] ExceptionTable;
         public int sp;
@@ -254,13 +254,13 @@ namespace JavaVirtualMachine
             }
             if (methodInfo.HasFlag(MethodInfoFlag.Native))
             {
-                Stack = new uint[1];
+                Stack = new int[1];
             }
             else
             {
-                Stack = new uint[MaxStack];
+                Stack = new int[MaxStack];
             }
-            Locals = new uint[MaxLocals];
+            Locals = new int[MaxLocals];
             ip = 0;
             sp = 0;
             ClassFile = methodInfo.ClassFile;
@@ -355,7 +355,7 @@ namespace JavaVirtualMachine
                                 }
                                 else if (value.GetType() == typeof(CFloatInfo))
                                 {
-                                    Utility.Push(ref Stack, ref sp, ((CFloatInfo)value).Bytes);
+                                    Utility.Push(ref Stack, ref sp, Stack[sp++] = (int)((CFloatInfo)value).Bytes);
                                 }
                                 else if (value.GetType() == typeof(CStringInfo))
                                 {
@@ -381,7 +381,7 @@ namespace JavaVirtualMachine
                                 }
                                 else if (value.GetType() == typeof(CDoubleInfo))
                                 {
-                                    Utility.Push(ref Stack, ref sp, ((CDoubleInfo)value).LongValue);
+                                    Utility.Push(ref Stack, ref sp, Stack[sp++] = (int)((CDoubleInfo)value).LongValue);
                                 }
                                 else throw new NotImplementedException("Not supported");
                             }
@@ -395,8 +395,8 @@ namespace JavaVirtualMachine
                         case OpCodes.dload:
                             {
                                 byte index = code[ip++];
-                                uint high = Locals[index];
-                                uint low = Locals[index + 1];
+                                int high = Locals[index];
+                                int low = Locals[index + 1];
                                 Utility.Push(ref Stack, ref sp, high);
                                 Utility.Push(ref Stack, ref sp, low);
                             }
@@ -413,8 +413,8 @@ namespace JavaVirtualMachine
                         case OpCodes.lload_3:
                             {
                                 int index = opCode - 0x1e;
-                                uint high = Locals[index];
-                                uint low = Locals[index + 1];
+                                int high = Locals[index];
+                                int low = Locals[index + 1];
                                 Utility.Push(ref Stack, ref sp, high);
                                 Utility.Push(ref Stack, ref sp, low);
                                 break;
@@ -434,8 +434,8 @@ namespace JavaVirtualMachine
                         case OpCodes.iaload:
                         case OpCodes.aaload:
                             {
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -446,8 +446,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.laload:
                             {
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -458,8 +458,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.faload:
                             {
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -470,8 +470,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.daload:
                             {
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -482,8 +482,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.baload:
                             {
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -501,8 +501,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.caload:
                             {
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -514,8 +514,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.saload:
                             {
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -529,7 +529,7 @@ namespace JavaVirtualMachine
                         case OpCodes.astore:
                             {
                                 int index = code[ip++];
-                                uint value = Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
                                 Locals[index] = value;
                             }
                             break;
@@ -537,7 +537,7 @@ namespace JavaVirtualMachine
                         case OpCodes.dstore:
                             {
                                 int index = code[ip++];
-                                (uint high, uint low) = Utility.PopLong(Stack, ref sp).Split();
+                                (int high, int low) = Utility.PopLong(Stack, ref sp).Split();
                                 Locals[index] = high;
                                 Locals[index + 1] = low;
                             }
@@ -553,7 +553,7 @@ namespace JavaVirtualMachine
                         case OpCodes.lstore_2:
                         case OpCodes.lstore_3:
                             {
-                                (uint high, uint low) = Utility.PopLong(Stack, ref sp).Split();
+                                (int high, int low) = Utility.PopLong(Stack, ref sp).Split();
                                 Locals[opCode - 0x3F] = high;
                                 Locals[opCode - 0x3E] = low;
                             }
@@ -567,35 +567,35 @@ namespace JavaVirtualMachine
                         case OpCodes.iastore:
                         case OpCodes.aastore:
                             {
-                                uint value = Utility.PopInt(Stack, ref sp);
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((int[])array.Array)[index] = (int)value;
+                                ((int[])array.Array)[index] = value;
                             }
                             break;
                         case OpCodes.lastore:
                             {
-                                ulong value = Utility.PopLong(Stack, ref sp);
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                long value = Utility.PopLong(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((long[])array.Array)[index] = (long)value;
+                                ((long[])array.Array)[index] = value;
                             }
                             break;
                         case OpCodes.fastore:
                             {
-                                uint valueAsInt = Utility.PopInt(Stack, ref sp);
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int valueAsInt = Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -606,9 +606,9 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.dastore:
                             {
-                                ulong valueAsLong = Utility.PopLong(Stack, ref sp);
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                long valueAsLong = Utility.PopLong(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -619,9 +619,9 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.bastore:
                             {
-                                uint valueAsInt = Utility.PopInt(Stack, ref sp);
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int valueAsInt = Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -639,9 +639,9 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.castore:
                             {
-                                uint valueAsInt = Utility.PopInt(Stack, ref sp);
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int valueAsInt = Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -652,9 +652,9 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.sastore:
                             {
-                                uint valueAsInt = Utility.PopInt(Stack, ref sp);
-                                uint index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int valueAsInt = Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NullPointerException");
@@ -705,7 +705,7 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.swap:
                             {
-                                uint temp = Stack[sp - 2];
+                                int temp = Stack[sp - 2];
                                 Stack[sp - 2] = Stack[sp - 1];
                                 Stack[sp - 1] = temp;
                             }
@@ -714,15 +714,15 @@ namespace JavaVirtualMachine
                         #region Arithmetic and Logic Op-Codes
                         case OpCodes.iadd:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first + second);
                             }
                             break;
                         case OpCodes.ladd:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first + second);
                             }
                             break;
@@ -742,15 +742,15 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.isub:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first - second);
                             }
                             break;
                         case OpCodes.lsub:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first - second);
                             }
                             break;
@@ -770,15 +770,15 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.imul:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first * second);
                             }
                             break;
                         case OpCodes.lmul:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first * second);
                             }
                             break;
@@ -798,8 +798,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.idiv:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 if(second == 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/ArithmeticException");
@@ -809,8 +809,8 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.ldiv:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
                             break;
@@ -830,15 +830,15 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.irem:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first % second);
                             }
                             break;
                         case OpCodes.lrem:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first % second);
                             }
                             break;
@@ -865,85 +865,82 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.ishl:
                             {
-                                int shiftBy = (int)Utility.PopInt(Stack, ref sp);
-                                int num = (int)Utility.PopInt(Stack, ref sp);
+                                int shiftBy = Utility.PopInt(Stack, ref sp);
+                                int num = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, num << shiftBy);
                             }
                             break;
                         case OpCodes.lshl:
                             {
-                                int shiftBy = (int)Utility.PopInt(Stack, ref sp);
-                                long num = (long)Utility.PopLong(Stack, ref sp);
+                                int shiftBy = Utility.PopInt(Stack, ref sp);
+                                long num = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, num << shiftBy);
                             }
                             break;
                         case OpCodes.ishr:
                             {
-                                int shiftBy = (int)Utility.PopInt(Stack, ref sp);
-                                int num = (int)Utility.PopInt(Stack, ref sp);
-                                Utility.Push(ref Stack, ref sp, num >> shiftBy);
-                            }
-                            break;
-                        case OpCodes.lshr:
-                            {
-                                int shiftBy = (int)Utility.PopInt(Stack, ref sp);
-                                long num = (long)Utility.PopLong(Stack, ref sp);
-                                Utility.Push(ref Stack, ref sp, num >> shiftBy);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
+                                Utility.Push(ref Stack, ref sp, (first >> second) | ((first >> 31) << 31));
+                                if (((first >> second) | ((first >> 31) << 31)) != (first >> second))
+                                {
+
+                                }
                             }
                             break;
                         case OpCodes.iushr:
                             {
-                                int shiftBy = (int)Utility.PopInt(Stack, ref sp);
-                                int num = (int)Utility.PopInt(Stack, ref sp);
-                                Utility.Push(ref Stack, ref sp, (int)((uint)num >> shiftBy));
-                            }
-                            break;
-                        case OpCodes.lushr:
-                            {
-                                int shiftBy = (int)Utility.PopInt(Stack, ref sp);
-                                long num = (long)Utility.PopLong(Stack, ref sp);
-                                Utility.Push(ref Stack, ref sp, (long)((ulong)num >> shiftBy));
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
+                                if (first < 0)
+                                {
+                                    Utility.Push(ref Stack, ref sp, -(-first >> second));
+                                }
+                                else
+                                {
+                                    Utility.Push(ref Stack, ref sp, first >> second);
+                                }
                             }
                             break;
                         case OpCodes.iand:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first & second);
                             }
                             break;
                         case OpCodes.land:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first & second);
                             }
                             break;
                         case OpCodes.ior:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first | second);
                             }
                             break;
                         case OpCodes.lor:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first | second);
                             }
                             break;
                         case OpCodes.ixor:
                             {
-                                int second = (int)Utility.PopInt(Stack, ref sp);
-                                int first = (int)Utility.PopInt(Stack, ref sp);
+                                int second = Utility.PopInt(Stack, ref sp);
+                                int first = Utility.PopInt(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first ^ second);
                             }
                             break;
                         case OpCodes.lxor:
                             {
-                                long second = (long)Utility.PopLong(Stack, ref sp);
-                                long first = (long)Utility.PopLong(Stack, ref sp);
+                                long second = Utility.PopLong(Stack, ref sp);
+                                long first = Utility.PopLong(Stack, ref sp);
                                 Utility.Push(ref Stack, ref sp, first ^ second);
                             }
                             break;
@@ -951,7 +948,7 @@ namespace JavaVirtualMachine
                             {
                                 byte index = code[ip++];
                                 sbyte incrementBy = (sbyte)code[ip++];
-                                Locals[index] += (uint)incrementBy;
+                                Locals[index] += incrementBy;
                             }
                             break;
                         #endregion
@@ -999,14 +996,14 @@ namespace JavaVirtualMachine
                             Stack[sp - 1] = (char)Stack[sp - 1];
                             break;
                         case OpCodes.i2s:
-                            Stack[sp - 1] = (ushort)Stack[sp - 1];
+                            Stack[sp - 1] = (short)Stack[sp - 1];
                             break;
                         #endregion
                         #region Non-Int Compare Op-Codes
                         case OpCodes.lcmp:
                             {
-                                long value2 = (long)Utility.PopLong(Stack, ref sp);
-                                long value1 = (long)Utility.PopLong(Stack, ref sp);
+                                long value2 = Utility.PopLong(Stack, ref sp);
+                                long value1 = Utility.PopLong(Stack, ref sp);
                                 if (value1 == value2)
                                 {
                                     Utility.Push(ref Stack, ref sp, 0);
@@ -1092,42 +1089,42 @@ namespace JavaVirtualMachine
                         case OpCodes.ifeq:
                             {
                                 short offset = readShort(code, ref ip);
-                                uint value = Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
                                 if (value == 0) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.ifne:
                             {
                                 short offset = readShort(code, ref ip);
-                                uint value = Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
                                 if (value != 0) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.iflt:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value = (int)Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
                                 if (value < 0) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.ifge:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value = (int)Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
                                 if (value >= 0) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.ifgt:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value = (int)Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
                                 if (value > 0) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.ifle:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value = (int)Utility.PopInt(Stack, ref sp);
+                                int value = Utility.PopInt(Stack, ref sp);
                                 if (value <= 0) ip = oldIp + offset;
                             }
                             break;
@@ -1135,8 +1132,8 @@ namespace JavaVirtualMachine
                         case OpCodes.if_acmpeq:
                             {
                                 short offset = readShort(code, ref ip);
-                                uint value2 = Utility.PopInt(Stack, ref sp);
-                                uint value1 = Utility.PopInt(Stack, ref sp);
+                                int value2 = Utility.PopInt(Stack, ref sp);
+                                int value1 = Utility.PopInt(Stack, ref sp);
                                 if (value1 == value2) ip = oldIp + offset;
                             }
                             break;
@@ -1144,40 +1141,40 @@ namespace JavaVirtualMachine
                         case OpCodes.if_acmpne:
                             {
                                 short offset = readShort(code, ref ip);
-                                uint value2 = Utility.PopInt(Stack, ref sp);
-                                uint value1 = Utility.PopInt(Stack, ref sp);
+                                int value2 = Utility.PopInt(Stack, ref sp);
+                                int value1 = Utility.PopInt(Stack, ref sp);
                                 if (value1 != value2) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.if_icmplt:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value2 = (int)Utility.PopInt(Stack, ref sp);
-                                int value1 = (int)Utility.PopInt(Stack, ref sp);
+                                int value2 = Utility.PopInt(Stack, ref sp);
+                                int value1 = Utility.PopInt(Stack, ref sp);
                                 if (value1 < value2) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.if_icmpge:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value2 = (int)Utility.PopInt(Stack, ref sp);
-                                int value1 = (int)Utility.PopInt(Stack, ref sp);
+                                int value2 = Utility.PopInt(Stack, ref sp);
+                                int value1 = Utility.PopInt(Stack, ref sp);
                                 if (value1 >= value2) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.if_icmpgt:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value2 = (int)Utility.PopInt(Stack, ref sp);
-                                int value1 = (int)Utility.PopInt(Stack, ref sp);
+                                int value2 = Utility.PopInt(Stack, ref sp);
+                                int value1 = Utility.PopInt(Stack, ref sp);
                                 if (value1 > value2) ip = oldIp + offset;
                             }
                             break;
                         case OpCodes.if_icmple:
                             {
                                 short offset = readShort(code, ref ip);
-                                int value2 = (int)Utility.PopInt(Stack, ref sp);
-                                int value1 = (int)Utility.PopInt(Stack, ref sp);
+                                int value2 = Utility.PopInt(Stack, ref sp);
+                                int value1 = Utility.PopInt(Stack, ref sp);
                                 if (value1 <= value2) ip = oldIp + offset;
                             }
                             break;
@@ -1190,7 +1187,7 @@ namespace JavaVirtualMachine
                         #endregion
                         case OpCodes.tableswitch:
                             {
-                                int index = (int)Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
                                 ip += (3 - ((ip - 1) % 4)); //Moves to next multiple of 4
 
                                 int defaultOffset = readInt(code, ref ip); //What to do w/ this?
@@ -1216,7 +1213,7 @@ namespace JavaVirtualMachine
                             }
                         case OpCodes.lookupswitch:
                             {
-                                int searchKey = (int)Utility.PopInt(Stack, ref sp);
+                                int searchKey = Utility.PopInt(Stack, ref sp);
                                 ip += (3 - ((ip - 1) % 4)); //Moves to next multiple of 4
 
                                 int defaultOffset = readInt(code, ref ip);
@@ -1245,13 +1242,13 @@ namespace JavaVirtualMachine
                         case OpCodes.freturn:
                         case OpCodes.areturn:
                             if (sp != 1) throw new InvalidOperationException("Wrong number of items in the stack");
-                            Utility.ReturnValue((int)Utility.PopInt(Stack, ref sp));
+                            Utility.ReturnValue(Utility.PopInt(Stack, ref sp));
                             return;
                         case OpCodes.lreturn:
                         case OpCodes.dreturn:
                             {
                                 if (sp != 2) throw new InvalidOperationException("Wrong number of items in the stack");
-                                Utility.ReturnLargeValue((long)Utility.PopLong(Stack, ref sp));
+                                Utility.ReturnLargeValue(Utility.PopLong(Stack, ref sp));
                                 return;
                             }
                         case OpCodes.@return:
@@ -1309,21 +1306,21 @@ namespace JavaVirtualMachine
                                     case 'I':
                                     case 'F':
                                         {
-                                            int value = (int)Utility.PopInt(Stack, ref sp);
+                                            int value = Utility.PopInt(Stack, ref sp);
                                             cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = new FieldNumber(value);
                                         }
                                         break;
                                     case 'D':
                                     case 'J':
                                         {
-                                            long value = (long)Utility.PopLong(Stack, ref sp);
+                                            long value = Utility.PopLong(Stack, ref sp);
                                             cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = new FieldLargeNumber(value);
                                         }
                                         break;
                                     case 'L':
                                     case '[':
                                         {
-                                            int valueRef = (int)Utility.PopInt(Stack, ref sp);
+                                            int valueRef = Utility.PopInt(Stack, ref sp);
                                             cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = new FieldReferenceValue(valueRef);
                                         }
                                         break;
@@ -1333,7 +1330,7 @@ namespace JavaVirtualMachine
                         case OpCodes.getfield:
                             {
                                 short index = readShort(code, ref ip);
-                                int objectRef = (int)Utility.PopInt(Stack, ref sp);
+                                int objectRef = Utility.PopInt(Stack, ref sp);
 
                                 if (objectRef == 0)
                                 {
@@ -1374,8 +1371,8 @@ namespace JavaVirtualMachine
                                     case 'I':
                                     case 'F':
                                         {
-                                            int value = (int)Utility.PopInt(Stack, ref sp);
-                                            int objectRef = (int)Utility.PopInt(Stack, ref sp);
+                                            int value = Utility.PopInt(Stack, ref sp);
+                                            int objectRef = Utility.PopInt(Stack, ref sp);
                                             HeapObject heapObj = Heap.GetObject(objectRef);
                                             heapObj.SetField(fieldRef.Name, fieldRef.Descriptor, new FieldNumber(value));
                                         }
@@ -1383,8 +1380,8 @@ namespace JavaVirtualMachine
                                     case 'D':
                                     case 'J':
                                         {
-                                            long value = (long)Utility.PopLong(Stack, ref sp);
-                                            int objectRef = (int)Utility.PopInt(Stack, ref sp);
+                                            long value = Utility.PopLong(Stack, ref sp);
+                                            int objectRef = Utility.PopInt(Stack, ref sp);
                                             HeapObject heapObj = Heap.GetObject(objectRef);
                                             heapObj.SetField(fieldRef.Name, fieldRef.Descriptor, new FieldLargeNumber(value));
                                         }
@@ -1392,8 +1389,8 @@ namespace JavaVirtualMachine
                                     case 'L':
                                     case '[':
                                         {
-                                            int valueRef = (int)Utility.PopInt(Stack, ref sp);
-                                            int objectRef = (int)Utility.PopInt(Stack, ref sp);
+                                            int valueRef = Utility.PopInt(Stack, ref sp);
+                                            int objectRef = Utility.PopInt(Stack, ref sp);
                                             HeapObject heapObj = Heap.GetObject(objectRef);
                                             heapObj.SetField(fieldRef.Name, fieldRef.Descriptor, new FieldReferenceValue(valueRef));
                                         }
@@ -1412,7 +1409,7 @@ namespace JavaVirtualMachine
                                 int[] arguments = new int[methodRef.NumOfArgs() + 1];
                                 for (int i = arguments.Length - 1; i >= 0; i--)
                                 {
-                                    arguments[i] = (int)Utility.PopInt(Stack, ref sp);
+                                    arguments[i] = Utility.PopInt(Stack, ref sp);
                                 }
 
                                 if (arguments[0] == 0)
@@ -1478,7 +1475,7 @@ namespace JavaVirtualMachine
                                 int[] arguments = new int[methodRef.NumOfArgs()];
                                 for (int i = arguments.Length - 1; i >= 0; i--)
                                 {
-                                    arguments[i] = (int)Utility.PopInt(Stack, ref sp);
+                                    arguments[i] = Utility.PopInt(Stack, ref sp);
                                 }
 
                                 //Search for method in cFile's staticMethodDictionary. If it's not there, repeat search in cFile's super and so on
@@ -1525,7 +1522,7 @@ namespace JavaVirtualMachine
                                 int[] arguments = new int[interfaceMethodRef.NumOfArgs() + 1];
                                 for (int i = arguments.Length - 1; i >= 0; i--)
                                 {
-                                    arguments[i] = (int)Utility.PopInt(Stack, ref sp);
+                                    arguments[i] = Utility.PopInt(Stack, ref sp);
                                 }
 
                                 if (arguments[0] == 0)
@@ -1579,7 +1576,7 @@ namespace JavaVirtualMachine
                         case OpCodes.newarray:
                             {
                                 byte aType = code[ip++];
-                                int count = (int)Utility.PopInt(Stack, ref sp);
+                                int count = Utility.PopInt(Stack, ref sp);
                                 if (count < 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NegativeArraySizeException");
@@ -1620,7 +1617,7 @@ namespace JavaVirtualMachine
                                 short index = readShort(code, ref ip);
                                 CClassInfo type = (CClassInfo)ClassFile.Constants[index];
 
-                                uint count = Utility.PopInt(Stack, ref sp);
+                                int count = Utility.PopInt(Stack, ref sp);
                                 if (count < 0)
                                 {
                                     Utility.ThrowJavaException("java/lang/NegativeArraySizeException");
@@ -1631,7 +1628,7 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.arraylength:
                             {
-                                int arrayRef = (int)Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 //Utility.Push(ref Stack, ref sp, array.Array.Length);
                                 Utility.Push(ref Stack, ref sp, array.GetLengthData());
@@ -1639,9 +1636,9 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.athrow:
                             {
-                                int objRef = (int)Utility.PeekInt(Stack, sp);
-                                Stack = new uint[MaxStack];
-                                Stack[0] = (uint)objRef;
+                                int objRef = Utility.PeekInt(Stack, sp);
+                                Stack = new int[MaxStack];
+                                Stack[0] = objRef;
                                 sp = 1;
                                 HeapObject obj = Heap.GetObject(objRef);
                                 FieldReferenceValue message = (FieldReferenceValue)obj.GetField("detailMessage", "Ljava/lang/String;");
@@ -1663,11 +1660,11 @@ namespace JavaVirtualMachine
 
                                 if ((OpCodes)opCode == OpCodes.instanceof)
                                 {
-                                    objectRef = (int)Utility.PopInt(Stack, ref sp);
+                                    objectRef = Utility.PopInt(Stack, ref sp);
                                 }
                                 else
                                 {
-                                    objectRef = (int)Utility.PeekInt(Stack, sp);
+                                    objectRef = Utility.PeekInt(Stack, sp);
                                 }
 
                                 if (objectRef == 0)
@@ -1701,14 +1698,14 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.monitorenter:
                             {
-                                int objectRef = (int)Utility.PopInt(Stack, ref sp);
+                                int objectRef = Utility.PopInt(Stack, ref sp);
                                 HeapItem item = Heap.GetItem(objectRef);
                                 //throw new NotImplementedException();
                             }
                             break;
                         case OpCodes.monitorexit:
                             {
-                                int objectRef = (int)Utility.PopInt(Stack, ref sp);
+                                int objectRef = Utility.PopInt(Stack, ref sp);
                                 HeapItem item = Heap.GetItem(objectRef);
                                 //throw new NotImplementedException();
                             }
@@ -1716,7 +1713,7 @@ namespace JavaVirtualMachine
                         case OpCodes.ifnull:
                             {
                                 int offset = readShort(code, ref ip);
-                                if (Heap.GetItem((int)Utility.PopInt(Stack, ref sp)) == null)
+                                if (Heap.GetItem(Utility.PopInt(Stack, ref sp)) == null)
                                 {
                                     ip = oldIp + offset;
                                 }
@@ -1725,7 +1722,7 @@ namespace JavaVirtualMachine
                         case OpCodes.ifnonnull:
                             {
                                 int offset = readShort(code, ref ip);
-                                if (Heap.GetItem((int)Utility.PopInt(Stack, ref sp)) != null)
+                                if (Heap.GetItem(Utility.PopInt(Stack, ref sp)) != null)
                                 {
                                     ip = oldIp + offset;
                                 }
@@ -1756,7 +1753,7 @@ namespace JavaVirtualMachine
                         if (Program.MethodFrameStack.Count > 1)
                         {
                             MethodFrame parentFrame = Program.MethodFrameStack.Peek(1);
-                            parentFrame.Stack = new uint[parentFrame.Stack.Length];
+                            parentFrame.Stack = new int[parentFrame.Stack.Length];
                             parentFrame.sp = 1;
                             parentFrame.Stack[0] = Utility.PopInt(Stack, ref sp);
                         }

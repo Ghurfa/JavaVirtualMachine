@@ -87,11 +87,11 @@ namespace JavaVirtualMachine
             }
             else if (Array is double[] doubleArr)
             {
-                doubleArr[index] = Utility.StoredDoubleToDouble((ulong)itemData);
+                doubleArr[index] = Utility.StoredDoubleToDouble(itemData);
             }
             else if (Array is float[] floatArr)
             {
-                floatArr[index] = (float)Utility.StoredDoubleToDouble((ulong)itemData);
+                floatArr[index] = (float)Utility.StoredDoubleToDouble(itemData);
             }
             else
             {

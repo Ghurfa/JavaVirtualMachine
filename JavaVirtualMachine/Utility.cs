@@ -117,52 +117,59 @@ namespace JavaVirtualMachine
             }*/
         }
 
-        public static void Push(ref uint[] stack, ref int stackPointer, uint value)
+        public static void Push(ref int[] stack, ref int stackPointer, int value)
         {
             stack[stackPointer++] = value;
         }
-        public static void Push(ref uint[] stack, ref int stackPointer, ulong value)
+        public static void Push(ref int[] stack, ref int stackPointer, int[] values)
         {
-            stack[stackPointer++] = (uint)(value >> (8 * sizeof(int)));
-            stack[stackPointer++] = (uint)(value & 0xFFFFFFFF);
+            for (int i = 0; i < values.Length; i++)
+            {
+                stack[stackPointer++] = values[i];
+            }
         }
-        public static void Push(ref uint[] stack, ref int stackPointer, float value)
+        public static void Push(ref int[] stack, ref int stackPointer, long value)
+        {
+            stack[stackPointer++] = (int)(value >> (8 * sizeof(int)));
+            stack[stackPointer++] = (int)(value & 0xFFFFFFFF);
+        }
+        public static void Push(ref int[] stack, ref int stackPointer, float value)
         {
             stack[stackPointer++] = FloatToStoredFloat(value);
         }
-        public static void Push(ref uint[] stack, ref int stackPointer, double value)
+        public static void Push(ref int[] stack, ref int stackPointer, double value)
         {
             Push(ref stack, ref stackPointer, DoubleToStoredDouble(value));
         }
 
-        public static uint PopInt(uint[] stack, ref int stackPointer)
+        public static int PopInt(int[] stack, ref int stackPointer)
         {
             return stack[--stackPointer];
         }
-        public static uint PeekInt(uint[] stack, int stackPointer, int offset = 0)
+        public static int PeekInt(int[] stack, int stackPointer, int offset = 0)
         {
             return stack[stackPointer - 1 - offset];
         }
-        public static ulong PeekLong(uint[] stack, int stackPointer, int offset = 0)
+        public static long PeekLong(int[] stack, int stackPointer, int offset = 0)
         {
-            uint lowInt = PeekInt(stack, stackPointer, offset);
-            uint highInt = PeekInt(stack, stackPointer, offset + 1);
-            return (highInt, lowInt).ToULong();
+            int lowInt = PeekInt(stack, stackPointer, offset);
+            int highInt = PeekInt(stack, stackPointer, offset + 1);
+            return (((long)highInt) << 32) | (long)lowInt;
         }
-        public static ulong PopLong(uint[] stack, ref int stackPointer)
+        public static long PopLong(int[] stack, ref int stackPointer)
         {
-            uint lowInt = PopInt(stack, ref stackPointer);
-            uint highInt = PopInt(stack, ref stackPointer);
-            return (highInt, lowInt).ToULong();
+            int lowInt = PopInt(stack, ref stackPointer);
+            int highInt = PopInt(stack, ref stackPointer);
+            return (((long)highInt) << 32) | (long)lowInt;
         }
-        public static float PopFloat(uint[] stack, ref int stackPointer)
+        public static float PopFloat(int[] stack, ref int stackPointer)
         {
-            uint storedValue = stack[--stackPointer];
+            int storedValue = stack[--stackPointer];
             return StoredFloatToFloat(storedValue);
         }
-        public static double PopDouble(uint[] stack, ref int stackPointer)
+        public static double PopDouble(int[] stack, ref int stackPointer)
         {
-            ulong storedValue = PopLong(stack, ref stackPointer);
+            long storedValue = PopLong(stack, ref stackPointer);
             return StoredDoubleToDouble(storedValue);
         }
 
@@ -172,17 +179,13 @@ namespace JavaVirtualMachine
             return asArray[depth];
         }
 
-        public static ulong ToULong(this (uint high, uint low) pair)
-        {
-            return (((ulong)pair.high) << 32) | (ulong)pair.low;
-        }
         public static long ToLong(this (int high, int low) pair)
         {
             return (((long)pair.high) << 32) | (long)pair.low;
         }
-        public static (uint high, uint low) Split(this ulong value)
+        public static (int high, int low) Split(this long value)
         {
-            return ((uint)(value >> 32), (uint)(value & 0xFFFFFFFF));
+            return ((int)(value >> 32), (int)(value & 0xFFFFFFFF));
         }
 
         public static byte[] AsByteArray(this long value)
@@ -277,7 +280,7 @@ namespace JavaVirtualMachine
             if (Program.MethodFrameStack.Count >= 0)
             {
                 MethodFrame parentFrame = Program.MethodFrameStack.Peek();
-                Push(ref parentFrame.Stack, ref parentFrame.sp, (uint)retVal);
+                Push(ref parentFrame.Stack, ref parentFrame.sp, retVal);
             }
         }
         public static void ReturnLargeValue(long retVal)
@@ -287,7 +290,7 @@ namespace JavaVirtualMachine
             if (Program.MethodFrameStack.Count >= 0)
             {
                 MethodFrame parentFrame = Program.MethodFrameStack.Peek();
-                Push(ref parentFrame.Stack, ref parentFrame.sp, (ulong)retVal);
+                Push(ref parentFrame.Stack, ref parentFrame.sp, retVal);
             }
         }
         public static void ReturnVoid()
@@ -322,8 +325,8 @@ namespace JavaVirtualMachine
             RunJavaFunction(initMethod, objRef);
 
             MethodFrame frame = Program.MethodFrameStack.Peek();
-            frame.Stack = new uint[frame.Stack.Length];
-            frame.Stack[0] = (uint)objRef;
+            frame.Stack = new int[frame.Stack.Length];
+            frame.Stack[0] = objRef;
             frame.sp = 1;
             throw new JavaException(exceptionCFile);
         }
@@ -338,49 +341,49 @@ namespace JavaVirtualMachine
             return className[0] == '[';
         }
 
-        public static float StoredFloatToFloat(uint storedFloat)
+        public static float StoredFloatToFloat(int storedFloat)
         {
             float asFloat;
             unsafe
             {
-                uint* storedFloatPtr = &storedFloat;
+                int* storedFloatPtr = &storedFloat;
                 float* asFloatPtr = (float*)storedFloatPtr;
                 asFloat = *asFloatPtr;
             }
             return asFloat;
         }
 
-        public static uint FloatToStoredFloat(float floatValue)
+        public static int FloatToStoredFloat(float floatValue)
         {
-            uint storedFloat;
+            int storedFloat;
             unsafe
             {
                 float* floatValPtr = &floatValue;
-                uint* storedFloatPtr = (uint*)floatValPtr;
+                int* storedFloatPtr = (int*)floatValPtr;
                 storedFloat = *storedFloatPtr;
             }
             return storedFloat;
         }
 
-        public static double StoredDoubleToDouble(ulong storedDouble)
+        public static double StoredDoubleToDouble(long storedDouble)
         {
             double asDouble;
             unsafe
             {
-                ulong* storedDoublePtr = &storedDouble;
+                long* storedDoublePtr = &storedDouble;
                 double* asDoublePtr = (double*)storedDoublePtr;
                 asDouble = *asDoublePtr;
             }
             return asDouble;
         }
 
-        public static ulong DoubleToStoredDouble(double doubleValue)
+        public static long DoubleToStoredDouble(double doubleValue)
         {
-            ulong storedDouble;
+            long storedDouble;
             unsafe
             {
                 double* doubleValPtr = &doubleValue;
-                ulong* storedDoublePtr = (ulong*)doubleValPtr;
+                long* storedDoublePtr = (long*)doubleValPtr;
                 storedDouble = *storedDoublePtr;
             }
             return storedDouble;
