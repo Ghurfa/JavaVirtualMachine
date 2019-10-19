@@ -32,7 +32,7 @@ namespace JavaVirtualMachine
 
             if(name.Length == 1)
             {
-                name = Utility.PrimitiveFullName(name);
+                name = JavaHelper.PrimitiveFullName(name);
             }
             else
             {
@@ -45,7 +45,7 @@ namespace JavaVirtualMachine
                 HeapObject classObj = new HeapObject(ClassFileManager.GetClassFile("java/lang/Class"));
                 addr = Heap.AddItem(classObj);
                 classObjects.Add(name, addr);
-                classObj.SetField("name", "Ljava/lang/String;", new FieldReferenceValue(Utility.CreateJavaStringLiteral(name)));
+                classObj.SetField("name", "Ljava/lang/String;", new FieldReferenceValue(JavaHelper.CreateJavaStringLiteral(name)));
             }
             return addr;
         }

@@ -89,14 +89,14 @@ namespace JavaVirtualMachine
             if (this is HeapArray arrToCast)
             {
                 FieldReferenceValue nameField = (FieldReferenceValue)(Heap.GetObject(arrToCast.ItemTypeClassObjAddr)).GetField(2);
-                from = "[L" + Utility.ReadJavaString(nameField).Replace('.', '/') + ';';
+                from = "[L" + JavaHelper.ReadJavaString(nameField).Replace('.', '/') + ';';
             }
             else
             {
                 from = 'L' + ClassFile.Name + ";";
             }
 
-            string to = Utility.ReadJavaString((FieldReferenceValue)classToCastTo.GetField(2));
+            string to = JavaHelper.ReadJavaString((FieldReferenceValue)classToCastTo.GetField(2));
 
             //https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-6.html#jvms-6.5.instanceof
 
@@ -132,7 +132,7 @@ namespace JavaVirtualMachine
                         {
                             if(fromPrimitive && toPrimitive)
                             {
-                                to = Utility.PrimitiveFullName(to);
+                                to = JavaHelper.PrimitiveFullName(to);
                                 if (to[0] != 'L') to = "L" + to + ";";
                                 return from == to;
                             }

@@ -254,7 +254,7 @@ namespace JavaVirtualMachine
             }
             if (methodInfo.HasFlag(MethodInfoFlag.Native))
             {
-                Stack = new int[1];
+                Stack = new int[2];
             }
             else
             {
@@ -335,7 +335,7 @@ namespace JavaVirtualMachine
                                 else if (value.GetType() == typeof(CStringInfo))
                                 {
                                     string @string = ((CStringInfo)value).String;
-                                    Utility.Push(ref Stack, ref sp, Utility.CreateJavaStringLiteral(@string));
+                                    Utility.Push(ref Stack, ref sp, JavaHelper.CreateJavaStringLiteral(@string));
                                 }
                                 else if (value.GetType() == typeof(CClassInfo))
                                 {
@@ -360,7 +360,7 @@ namespace JavaVirtualMachine
                                 else if (value.GetType() == typeof(CStringInfo))
                                 {
                                     string @string = ((CStringInfo)value).String;
-                                    Utility.Push(ref Stack, ref sp, Utility.CreateJavaStringLiteral(@string));
+                                    Utility.Push(ref Stack, ref sp, JavaHelper.CreateJavaStringLiteral(@string));
                                 }
                                 else if (value.GetType() == typeof(CClassInfo))
                                 {
@@ -425,6 +425,18 @@ namespace JavaVirtualMachine
                         case OpCodes.fload_3:
                             Utility.Push(ref Stack, ref sp, Locals[opCode - 0x22]);  //Floats already stored as int
                             break;
+                        case OpCodes.dload_0:
+                        case OpCodes.dload_1:
+                        case OpCodes.dload_2:
+                        case OpCodes.dload_3:
+                            {
+                                int index = opCode - 0x26;
+                                int high = Locals[index];
+                                int low = Locals[index + 1];
+                                Utility.Push(ref Stack, ref sp, high); //Doubles already stored as long
+                                Utility.Push(ref Stack, ref sp, low);
+                                break;
+                            }
                         case OpCodes.aload_0:
                         case OpCodes.aload_1:
                         case OpCodes.aload_2:
@@ -438,7 +450,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 Utility.Push(ref Stack, ref sp, ((int[])array.Array)[index]);
@@ -450,7 +462,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 Utility.Push(ref Stack, ref sp, ((long[])array.Array)[index]);
@@ -462,7 +474,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 Utility.Push(ref Stack, ref sp, ((float[])array.Array)[index]);
@@ -474,7 +486,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 Utility.Push(ref Stack, ref sp, ((double[])array.Array)[index]);
@@ -486,7 +498,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 if (array.Array is byte[] byteArr)
@@ -505,7 +517,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 Utility.Push(ref Stack, ref sp, ((char[])array.Array)[index]);
@@ -518,7 +530,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 Utility.Push(ref Stack, ref sp, ((short[])array.Array)[index]);
@@ -572,7 +584,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 ((int[])array.Array)[index] = value;
@@ -585,7 +597,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 ((long[])array.Array)[index] = value;
@@ -598,10 +610,10 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((float[])array.Array)[index] = Utility.StoredFloatToFloat(valueAsInt);
+                                ((float[])array.Array)[index] = JavaHelper.StoredFloatToFloat(valueAsInt);
                             }
                             break;
                         case OpCodes.dastore:
@@ -611,10 +623,10 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((double[])array.Array)[index] = Utility.StoredDoubleToDouble(valueAsLong);
+                                ((double[])array.Array)[index] = JavaHelper.StoredDoubleToDouble(valueAsLong);
                             }
                             break;
                         case OpCodes.bastore:
@@ -624,7 +636,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 if (array.Array is byte[] byteArr)
@@ -644,7 +656,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 ((char[])array.Array)[index] = (char)valueAsInt;
@@ -657,7 +669,7 @@ namespace JavaVirtualMachine
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 if (arrayRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
                                 ((short[])array.Array)[index] = (short)valueAsInt;
@@ -802,7 +814,7 @@ namespace JavaVirtualMachine
                                 int first = Utility.PopInt(Stack, ref sp);
                                 if (second == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                    JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
                                 }
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
@@ -813,7 +825,7 @@ namespace JavaVirtualMachine
                                 long first = Utility.PopLong(Stack, ref sp);
                                 if (second == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                    JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
                                 }
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
@@ -824,7 +836,7 @@ namespace JavaVirtualMachine
                                 float first = Utility.PopFloat(Stack, ref sp);
                                 if (second == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                    JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
                                 }
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
@@ -835,7 +847,7 @@ namespace JavaVirtualMachine
                                 double first = Utility.PopDouble(Stack, ref sp);
                                 if (second == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                    JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
                                 }
                                 Utility.Push(ref Stack, ref sp, first / second);
                             }
@@ -846,7 +858,7 @@ namespace JavaVirtualMachine
                                 int first = Utility.PopInt(Stack, ref sp);
                                 if (second == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                    JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
                                 }
                                 Utility.Push(ref Stack, ref sp, first % second);
                             }
@@ -857,7 +869,7 @@ namespace JavaVirtualMachine
                                 long first = Utility.PopLong(Stack, ref sp);
                                 if (second == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/ArithmeticException");
+                                    JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
                                 }
                                 else
                                 {
@@ -1267,18 +1279,18 @@ namespace JavaVirtualMachine
                         case OpCodes.freturn:
                         case OpCodes.areturn:
                             if (sp != 1) throw new InvalidOperationException("Wrong number of items in the stack");
-                            Utility.ReturnValue(Utility.PopInt(Stack, ref sp));
+                            JavaHelper.ReturnValue(Utility.PopInt(Stack, ref sp));
                             return;
                         case OpCodes.lreturn:
                         case OpCodes.dreturn:
                             {
                                 if (sp != 2) throw new InvalidOperationException("Wrong number of items in the stack");
-                                Utility.ReturnLargeValue(Utility.PopLong(Stack, ref sp));
+                                JavaHelper.ReturnLargeValue(Utility.PopLong(Stack, ref sp));
                                 return;
                             }
                         case OpCodes.@return:
                             if (sp != 0) throw new InvalidOperationException("Wrong number of items in the stack");
-                            Utility.ReturnVoid();
+                            JavaHelper.ReturnVoid();
                             return;
                         case OpCodes.getstatic:
                             {
@@ -1359,7 +1371,7 @@ namespace JavaVirtualMachine
 
                                 if (objectRef == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
 
                                 CFieldRefInfo fieldRef = (CFieldRefInfo)ClassFile.Constants[index];
@@ -1439,7 +1451,7 @@ namespace JavaVirtualMachine
 
                                 if (arguments[0] == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
 
                                 ClassFile cFile;
@@ -1479,10 +1491,10 @@ namespace JavaVirtualMachine
 
                                     //if (method.ClassFile.Name == "java/util/Properties" && method.Name == "getProperty")
                                     //{
-                                    //    string arg = Utility.ReadJavaString(arguments[1]);
+                                    //    string arg = JavaHelper.ReadJavaString(arguments[1]);
                                     //    if(Utility.PeekInt(Stack, sp) != 0)
                                     //    {
-                                    //        string ret = Utility.ReadJavaString(Utility.PeekInt(Stack, sp));
+                                    //        string ret = JavaHelper.ReadJavaString(Utility.PeekInt(Stack, sp));
                                     //    }
                                     //}
                                 }
@@ -1552,7 +1564,7 @@ namespace JavaVirtualMachine
 
                                 if (arguments[0] == 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NullPointerException");
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
 
                                 string objectRefClassFileName = ((HeapObject)(Heap.GetItem(arguments[0]))).ClassFile.Name;
@@ -1565,7 +1577,7 @@ namespace JavaVirtualMachine
                                     cFile = cFile.SuperClass;
                                     if (cFile == null)
                                     {
-                                        Utility.ThrowJavaException("java/lang/AbstractMethodError");
+                                        JavaHelper.ThrowJavaException("java/lang/AbstractMethodError");
                                     }
                                 }
 
@@ -1604,7 +1616,7 @@ namespace JavaVirtualMachine
                                 int count = Utility.PopInt(Stack, ref sp);
                                 if (count < 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NegativeArraySizeException");
+                                    JavaHelper.ThrowJavaException("java/lang/NegativeArraySizeException");
                                 }
                                 switch ((ArrayTypeCodes)aType)
                                 {
@@ -1645,7 +1657,7 @@ namespace JavaVirtualMachine
                                 int count = Utility.PopInt(Stack, ref sp);
                                 if (count < 0)
                                 {
-                                    Utility.ThrowJavaException("java/lang/NegativeArraySizeException");
+                                    JavaHelper.ThrowJavaException("java/lang/NegativeArraySizeException");
                                 }
 
                                 Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new int[count], ClassObjectManager.GetClassObjectAddr(type.Name))));
@@ -1673,7 +1685,7 @@ namespace JavaVirtualMachine
                                 }
                                 else
                                 {
-                                    throw new JavaException(obj.ClassFile, $"{Utility.ReadJavaString(message)}");
+                                    throw new JavaException(obj.ClassFile, $"{JavaHelper.ReadJavaString(message)}");
                                 }
                             }
                         case OpCodes.checkcast:
@@ -1715,7 +1727,7 @@ namespace JavaVirtualMachine
                                     {
                                         if (!instanceOf)
                                         {
-                                            Utility.ThrowJavaException("java/lang/ClassCastException");
+                                            JavaHelper.ThrowJavaException("java/lang/ClassCastException");
                                         }
                                     }
                                 }

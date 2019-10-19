@@ -34,7 +34,7 @@ namespace JavaVirtualMachine
         {
             HeapObject classObj = Heap.GetObject(classObjAddr);
             FieldReferenceValue nameRef = (FieldReferenceValue)classObj.GetField(2);
-            string name = Utility.ReadJavaString(nameRef);
+            string name = JavaHelper.ReadJavaString(nameRef);
             return GetClassFile(name);
         }
         public static ClassFile GetClassFile(string key)
@@ -72,8 +72,8 @@ namespace JavaVirtualMachine
                 HeapObject exception = new HeapObject(exceptionClassFile);
                 MethodInfo initMethodInfo = exceptionClassFile.MethodDictionary[("<init>", "(Ljava/lang/String;)V")];
                 int exceptionAddr = Heap.AddItem(exception);
-                int messageAddr = Utility.CreateJavaStringLiteral($"Could not find class {key}");
-                Utility.RunJavaFunction(initMethodInfo, exceptionAddr, messageAddr);
+                int messageAddr = JavaHelper.CreateJavaStringLiteral($"Could not find class {key}");
+                JavaHelper.RunJavaFunction(initMethodInfo, exceptionAddr, messageAddr);
                 if (Program.MethodFrameStack.Count > 0)
                 {
                     MethodFrame parentFrame = Program.MethodFrameStack.Peek();
@@ -96,7 +96,7 @@ namespace JavaVirtualMachine
                     classFiles[cFile.Name] = (classFiles[cFile.Name].path, cFile, true);
                     if (classFiles[cFile.Name].classFile.MethodDictionary.TryGetValue(("<clinit>", "()V"), out MethodInfo classInitMethod))
                     {
-                        Utility.RunJavaFunction(classInitMethod);
+                        JavaHelper.RunJavaFunction(classInitMethod);
                     }
                 }
                 cFile = cFile.SuperClass;

@@ -29,7 +29,7 @@ namespace JavaVirtualMachine
             ThreadManager.ThreadAddr = Heap.AddItem(threadObj);
 
             //MethodInfo threadInit = threadCFile.MethodDictionary[("<init>", "(Ljava/lang/String;)V")];
-            //Utility.RunJavaFunction(threadInit, ThreadManager.ThreadAddr, Utility.CreateJavaStringLiteral("main"));
+            //JavaHelper.RunJavaFunction(threadInit, ThreadManager.ThreadAddr, JavaHelper.CreateJavaStringLiteral("main"));
             threadObj.SetField("group", "Ljava/lang/ThreadGroup;", threadGroupAddr);
             threadObj.SetField("priority", "I", 5);
 
@@ -37,7 +37,7 @@ namespace JavaVirtualMachine
             MethodInfo initSystemClassMethod = systemCFile.MethodDictionary[("initializeSystemClass", "()V")];
             try
             {
-                Utility.RunJavaFunction(initSystemClassMethod);
+                JavaHelper.RunJavaFunction(initSystemClassMethod);
             }
             catch(JavaException ex)
             {
@@ -49,7 +49,7 @@ namespace JavaVirtualMachine
             MethodInfo mainProgInit = mainProg.MethodDictionary[("<init>", "()V")];
             try
             {
-                Utility.RunJavaFunction(mainProgInit, mainProgObjAddr);
+                JavaHelper.RunJavaFunction(mainProgInit, mainProgObjAddr);
             }
             catch (JavaException ex)
             {
@@ -63,7 +63,7 @@ namespace JavaVirtualMachine
                 {
                     try
                     {
-                        Utility.RunJavaFunction(method.Value, mainProgObjAddr);
+                        JavaHelper.RunJavaFunction(method.Value, mainProgObjAddr);
                     }
                     catch (JavaException ex)
                     {
@@ -80,7 +80,7 @@ namespace JavaVirtualMachine
                 {
                     try
                     {
-                        Utility.RunJavaFunction(method.Value, mainProgObjAddr);
+                        JavaHelper.RunJavaFunction(method.Value, mainProgObjAddr);
                         Console.WriteLine("End of program");
                     }
                     catch (JavaException ex)

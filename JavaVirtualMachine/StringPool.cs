@@ -11,7 +11,7 @@ namespace JavaVirtualMachine
         {
             foreach(int stringObjAddr in StringAddresses)
             {
-                if(Utility.ReadJavaString(stringObjAddr) == Utility.ReadJavaString(stringObjToInternAddr))
+                if(JavaHelper.ReadJavaString(stringObjAddr) == JavaHelper.ReadJavaString(stringObjToInternAddr))
                 {
                     return stringObjAddr;
                 }
