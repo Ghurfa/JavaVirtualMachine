@@ -28,8 +28,6 @@ namespace JavaVirtualMachine
             HeapObject threadObj = new HeapObject(threadCFile);
             ThreadManager.ThreadAddr = Heap.AddItem(threadObj);
 
-            //MethodInfo threadInit = threadCFile.MethodDictionary[("<init>", "(Ljava/lang/String;)V")];
-            //JavaHelper.RunJavaFunction(threadInit, ThreadManager.ThreadAddr, JavaHelper.CreateJavaStringLiteral("main"));
             threadObj.SetField("group", "Ljava/lang/ThreadGroup;", threadGroupAddr);
             threadObj.SetField("priority", "I", 5);
 
@@ -91,7 +89,7 @@ namespace JavaVirtualMachine
                     break;
                 }
             }
-            Console.ReadLine();
+            Console.ReadKey();
         }
     }
 }

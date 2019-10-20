@@ -277,6 +277,11 @@ namespace JavaVirtualMachine
                     //TODO: Fix system.out.println
                     int oldIp = ip;
                     byte opCode = code[ip++];
+                    bool wide = opCode == (int)OpCodes.wide;
+                    if(wide)
+                    {
+                        opCode = code[ip++];
+                    }
                     switch ((OpCodes)opCode)
                     {
                         case OpCodes.nop:
@@ -389,12 +394,19 @@ namespace JavaVirtualMachine
                         case OpCodes.iload:
                         case OpCodes.fload:
                         case OpCodes.aload:
-                            Utility.Push(ref Stack, ref sp, Locals[code[ip++]]);
+                            if(wide)
+                            {
+                                Utility.Push(ref Stack, ref sp, Locals[readShort(code, ref ip)]);
+                            }
+                            else
+                            {
+                                Utility.Push(ref Stack, ref sp, Locals[code[ip++]]);
+                            }
                             break;
                         case OpCodes.lload:
                         case OpCodes.dload:
                             {
-                                byte index = code[ip++];
+                                short index = wide ? readShort(code, ref ip) : code[ip++];
                                 int high = Locals[index];
                                 int low = Locals[index + 1];
                                 Utility.Push(ref Stack, ref sp, high);
@@ -540,7 +552,7 @@ namespace JavaVirtualMachine
                         case OpCodes.fstore:
                         case OpCodes.astore:
                             {
-                                int index = code[ip++];
+                                int index = wide ? readShort(code, ref ip) : code[ip++];
                                 int value = Utility.PopInt(Stack, ref sp);
                                 Locals[index] = value;
                             }
@@ -548,7 +560,7 @@ namespace JavaVirtualMachine
                         case OpCodes.lstore:
                         case OpCodes.dstore:
                             {
-                                int index = code[ip++];
+                                int index = wide ? readShort(code, ref ip) : code[ip++];
                                 (int high, int low) = Utility.PopLong(Stack, ref sp).Split();
                                 Locals[index] = high;
                                 Locals[index + 1] = low;
@@ -568,6 +580,22 @@ namespace JavaVirtualMachine
                                 (int high, int low) = Utility.PopLong(Stack, ref sp).Split();
                                 Locals[opCode - 0x3F] = high;
                                 Locals[opCode - 0x3E] = low;
+                            }
+                            break;
+                        case OpCodes.fstore_0:
+                        case OpCodes.fstore_1:
+                        case OpCodes.fstore_2:
+                        case OpCodes.fstore_3:
+                            Locals[opCode - 0x43] = Stack[--sp];
+                            break;
+                        case OpCodes.dstore_0:
+                        case OpCodes.dstore_1:
+                        case OpCodes.dstore_2:
+                        case OpCodes.dstore_3:
+                            {
+                                (int high, int low) = Utility.PopLong(Stack, ref sp).Split();
+                                Locals[opCode - 0x47] = high;
+                                Locals[opCode - 0x46] = low;
                             }
                             break;
                         case OpCodes.astore_0:
@@ -723,7 +751,7 @@ namespace JavaVirtualMachine
                             }
                             break;
                         #endregion
-                        #region Arithmetic and Logic Op-Codes
+                        #region Arithmetic Op-Codes
                         case OpCodes.iadd:
                             {
                                 int second = Utility.PopInt(Stack, ref sp);
@@ -897,6 +925,14 @@ namespace JavaVirtualMachine
                         case OpCodes.lneg:
                             Utility.Push(ref Stack, ref sp, -Utility.PopLong(Stack, ref sp));
                             break;
+                        case OpCodes.fneg:
+                            Utility.Push(ref Stack, ref sp, -Utility.PopFloat(Stack, ref sp));
+                            break;
+                        case OpCodes.dneg:
+                            Utility.Push(ref Stack, ref sp, -Utility.PopDouble(Stack, ref sp));
+                            break;
+                        #endregion
+                        #region Bitwise Op-Codes
                         case OpCodes.ishl:
                             {
                                 int shiftBy = Utility.PopInt(Stack, ref sp);
@@ -983,7 +1019,7 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.iinc:
                             {
-                                byte index = code[ip++];
+                                short index = wide ? readShort(code, ref ip) : code[ip++];
                                 sbyte incrementBy = (sbyte)code[ip++];
                                 Locals[index] += incrementBy;
                             }
@@ -1222,6 +1258,21 @@ namespace JavaVirtualMachine
                             }
                             break;
                         #endregion
+                        case OpCodes.jsr:
+                            {
+                                short offset = readShort(code, ref ip);
+                                int retAddress = ip;
+                                Utility.Push(ref Stack, ref sp, retAddress);
+                                ip = oldIp + offset;
+                            }
+                            break;
+                        case OpCodes.ret:
+                            {
+                                short index = wide ? readShort(code, ref ip) : code[ip++];
+                                int retAddress = Locals[index];
+                                ip = retAddress;
+                            }
+                            break;
                         case OpCodes.tableswitch:
                             {
                                 int index = Utility.PopInt(Stack, ref sp);
@@ -1488,15 +1539,6 @@ namespace JavaVirtualMachine
                                     MethodFrame methodFrame = new MethodFrame(method);
                                     arguments.CopyTo(methodFrame.Locals, 0);
                                     methodFrame.Execute();
-
-                                    //if (method.ClassFile.Name == "java/util/Properties" && method.Name == "getProperty")
-                                    //{
-                                    //    string arg = JavaHelper.ReadJavaString(arguments[1]);
-                                    //    if(Utility.PeekInt(Stack, sp) != 0)
-                                    //    {
-                                    //        string ret = JavaHelper.ReadJavaString(Utility.PeekInt(Stack, sp));
-                                    //    }
-                                    //}
                                 }
                             }
                             break;
@@ -1527,7 +1569,6 @@ namespace JavaVirtualMachine
 
                                 }
 
-                                //int[] ret;
                                 if (!method.HasFlag(MethodInfoFlag.Native))
                                 {
                                     DebugWriter.CallFuncDebugWrite(method, arguments);
@@ -1581,7 +1622,6 @@ namespace JavaVirtualMachine
                                     }
                                 }
 
-                                //int[] ret;
                                 if (!method.HasFlag(MethodInfoFlag.Native))
                                 {
                                     DebugWriter.CallFuncDebugWrite(interfaceMethodRef, arguments, cFile.Name);
@@ -1667,7 +1707,6 @@ namespace JavaVirtualMachine
                             {
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
                                 HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                //Utility.Push(ref Stack, ref sp, array.Array.Length);
                                 Utility.Push(ref Stack, ref sp, array.GetLengthData());
                             }
                             break;
@@ -1737,14 +1776,12 @@ namespace JavaVirtualMachine
                             {
                                 int objectRef = Utility.PopInt(Stack, ref sp);
                                 HeapItem item = Heap.GetItem(objectRef);
-                                //throw new NotImplementedException();
                             }
                             break;
                         case OpCodes.monitorexit:
                             {
                                 int objectRef = Utility.PopInt(Stack, ref sp);
                                 HeapItem item = Heap.GetItem(objectRef);
-                                //throw new NotImplementedException();
                             }
                             break;
                         case OpCodes.ifnull:
@@ -1763,6 +1800,21 @@ namespace JavaVirtualMachine
                                 {
                                     ip = oldIp + offset;
                                 }
+                            }
+                            break;
+                        case OpCodes.goto_w:
+                            {
+                                int offset = readInt(code, ref ip);
+                                ip = oldIp + offset;
+                            }
+                            break;
+                        case OpCodes.jsr_w:
+                            {
+                                int offset = readInt(code, ref ip);
+                                int retAddress = ip;
+                                Utility.Push(ref Stack, ref sp, retAddress);
+
+                                ip = oldIp + offset;
                             }
                             break;
                         default:

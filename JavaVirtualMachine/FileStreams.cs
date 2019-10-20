@@ -9,6 +9,7 @@ namespace JavaVirtualMachine
     {
         private static Dictionary<string, FileStream> streams = new Dictionary<string, FileStream>();
         private static StreamReader ConsoleInputReader = new StreamReader(Console.OpenStandardInput());
+        private static StreamWriter ConsoleOutputWriter = new StreamWriter(Console.OpenStandardOutput());
         public static void OpenRead(string file)
         {
             FileStream fileStream = File.OpenRead(file);
@@ -37,6 +38,23 @@ namespace JavaVirtualMachine
         public static int AvailableBytesFromConsole()
         {
             return 0;
+        }
+
+        public static void OpenWrite(string file)
+        {
+            FileStream fileStream = File.OpenWrite(file);
+            streams.Add(file, fileStream);
+        }
+        public static void WriteBytes(string file, byte[] array, int offset, int length)
+        {
+            FileStream fileStream = streams[file];
+            fileStream.Write(array, offset, length);
+        }
+
+        public static void WriteBytesToConsole(byte[] array, int offset, int length)
+        {
+            throw new NotImplementedException();
+            ConsoleOutputWriter.Write(Encoding.UTF8.GetString(array, offset, length));
         }
 
         public static void Close(string file)

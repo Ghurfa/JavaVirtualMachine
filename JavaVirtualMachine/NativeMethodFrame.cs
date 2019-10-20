@@ -26,7 +26,6 @@ namespace JavaVirtualMachine
 
                 if (className == "java/io/FileDescriptor" && nameAndDescriptor == ("initIDs", "()V"))
                 {
-                    //???
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -39,7 +38,6 @@ namespace JavaVirtualMachine
                     }
                     else if (d == 1) //out
                     {
-                        //temp
                         JavaHelper.ReturnLargeValue(1L);
                     }
                     else if (d == 2) //err
@@ -50,19 +48,25 @@ namespace JavaVirtualMachine
                     {
                         JavaHelper.ReturnLargeValue(-1L);
                     }
-                    //??
                     return;
                 }
                 else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("available", "()I"))
                 {
-                    //system.in fails - todo: fix like java/io/fileinpustream readbytes
-
                     FieldReferenceValue pathField = (FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;");
                     if (pathField.Address == 0)
                     {
-                        int available = FileStreams.AvailableBytesFromConsole();
-                        JavaHelper.ReturnValue(available);
-                        return;
+                        FieldReferenceValue fileDescriptor = (FieldReferenceValue)obj.GetField("fd", "Ljava/io/FileDescriptor;");
+                        long handle = ((FieldLargeNumber)Heap.GetObject(fileDescriptor.Address).GetField("handle", "J")).Value;
+                        if (handle != 0)
+                        {
+                            JavaHelper.ThrowJavaException("java/io/IOException");
+                        }
+                        else
+                        {
+                            int available = FileStreams.AvailableBytesFromConsole();
+                            JavaHelper.ReturnValue(available);
+                            return;
+                        }
                     }
                     else
                     {
@@ -82,25 +86,22 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("initIDs", "()V"))
                 {
-                    //???
                     JavaHelper.ReturnVoid();
                     return;
                 }
                 else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("open0", "(Ljava/lang/String;)V"))
                 {
                     string fileName = JavaHelper.ReadJavaString(Args[1]);
-                    string[] filePathParts = fileName.Split('\\');
                     try
                     {
-                        FileStreams.OpenRead(fileName); //make filestreams class?
-                        obj.SetField("path", "Ljava/lang/String;", Args[1]); //not needed?
+                        FileStreams.OpenRead(fileName);
+                        obj.SetField("path", "Ljava/lang/String;", Args[1]);
                     }
                     catch (FileNotFoundException)
                     {
                         JavaHelper.ThrowJavaException("java/io/FileNotFoundException");
                     }
                     JavaHelper.ReturnVoid();
-                    //JavaHelper.ThrowJavaException("java/io/FileNotFoundException");
                     return;
                 }
                 else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("readBytes", "([BII)I"))
@@ -141,24 +142,58 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/FileOutputStream" && nameAndDescriptor == ("initIDs", "()V"))
                 {
-                    //???
+                    JavaHelper.ReturnVoid();
+                    return;
+                }
+                else if(className == "java/io/FileOutputStream" && nameAndDescriptor == ("open0", "(Ljava/lang/String;Z)V"))
+                {
+                    string fileName = JavaHelper.ReadJavaString(Args[1]);
+                    try
+                    {
+                        FileStreams.OpenWrite(fileName);
+                        obj.SetField("path", "Ljava/lang/String;", Args[1]);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        JavaHelper.ThrowJavaException("java/io/FileNotFoundException");
+                    }
                     JavaHelper.ReturnVoid();
                     return;
                 }
                 else if (className == "java/io/FileOutputStream" && nameAndDescriptor == ("writeBytes", "([BIIZ)V"))
                 {
-                    HeapArray bytes = (HeapArray)Heap.GetItem(Args[1]);
+                    FieldReferenceValue pathField = (FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;");
+                    int byteArrAddr = Args[1];
                     int offset = Args[2];
                     int length = Args[3];
                     bool append = Args[4] != 0;
 
-                    HeapObject fileDescriptor = Heap.GetObject(((FieldReferenceValue)obj.GetField("fd", "Ljava/io/FileDescriptor;")).Address);
-                    long handle = ((FieldLargeNumber)fileDescriptor.GetField("handle", "J")).Value; //address (defined in java/io/FileDescriptor set(int))
-
-                    if (handle == 1)
+                    if (pathField.Address == 0)
                     {
-                        string stringToPrint = Encoding.UTF8.GetString((byte[])bytes.Array, offset, length);
-                        Console.Write(stringToPrint);
+                        HeapObject fileDescriptor = Heap.GetObject(((FieldReferenceValue)obj.GetField("fd", "Ljava/io/FileDescriptor;")).Address);
+                        long handle = ((FieldLargeNumber)fileDescriptor.GetField("handle", "J")).Value; //address (defined in java/io/FileDescriptor set(int))
+                        if (handle != 1)
+                        {
+                            JavaHelper.ThrowJavaException("java/io/IOException");
+                        }
+                        else
+                        {
+                            HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
+                            FileStreams.WriteBytesToConsole((byte[])javaByteArr.Array, offset, length);
+
+                            JavaHelper.ReturnVoid();
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        string path = JavaHelper.ReadJavaString(pathField);
+                        HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
+
+                        FileStreams.WriteBytes(path, (byte[])javaByteArr.Array, offset, length);
+
+                        JavaHelper.ReturnVoid();
+                        return;
                     }
 
                     JavaHelper.ReturnVoid();
@@ -211,7 +246,6 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("desiredAssertionStatus0", "(Ljava/lang/Class;)Z"))
                 {
-                    //What do?
                     JavaHelper.ReturnValue(0);
                     return;
                 }
@@ -515,35 +549,6 @@ namespace JavaVirtualMachine
                 {
                     string name = JavaHelper.ReadJavaString(Args[0]);
                     int classObjAddr = classObjAddr = ClassObjectManager.GetClassObjectAddr(name);
-                    /*switch (name)
-                    {
-                        case "byte":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("B");
-                            break;
-                        case "char":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("C");
-                            break;
-                        case "double":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("D");
-                            break;
-                        case "float":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("F");
-                            break;
-                        case "int":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("I");
-                            break;
-                        case "long":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("J");
-                            break;
-                        case "short":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("S");
-                            break;
-                        case "boolean":
-                            classObjAddr = ClassObjectManager.GetClassObjectAddr("Z");
-                            break;
-                        default:
-                            throw new ArgumentException();
-                    }*/
                     JavaHelper.ReturnValue(classObjAddr);
                     return;
                 }
@@ -592,7 +597,6 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("<clinit>", "()V"))
                 {
-                    //???
                     JavaHelper.ReturnVoid();
                     return;
                 }

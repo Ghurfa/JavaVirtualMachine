@@ -7,7 +7,6 @@ namespace JavaVirtualMachine
 {
     static class Heap
     {
-        //todo: heap
         static Memory<byte> memory = new Memory<byte>(new byte[4096]);
         static int itemIndex = 8;
         static Dictionary<int, HeapItem> heapItems = new Dictionary<int, HeapItem>()

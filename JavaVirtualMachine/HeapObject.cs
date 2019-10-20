@@ -18,10 +18,8 @@ namespace JavaVirtualMachine
             ClassFile = classFile;
             fields = new FieldValue[ClassFile.ObjectFields.Length];
             ClassFile.ObjectFields.CopyTo(fields, 0);
-            //data = new Memory<byte>(new byte[8 + 8 * fields.Count]);
             NumOfBytes = 8 + 8 * fields.Length;
             Address = Heap.AllocateMemory(NumOfBytes);
-            //data = Heap.GetMemorySlice(Address, size);
         }
 
         public FieldValue GetField(string name, string descriptor)
@@ -150,11 +148,6 @@ namespace JavaVirtualMachine
                             }
                         }
                     }
-                    else
-                    {
-
-                    }
-
                 }
                 else
                 {
