@@ -41,13 +41,22 @@ namespace JavaVirtualMachine
 
         public static void OpenWrite(string file)
         {
-            FileStream fileStream = File.OpenWrite(file);
+            FileStream fileStream = File.Open(file, FileMode.Open);
             streams.Add(file, fileStream);
         }
-        public static void WriteBytes(string file, byte[] array, int offset, int length)
+        public static void WriteBytes(string file, byte[] array, int offset, int length, bool append)
         {
             FileStream fileStream = streams[file];
-            fileStream.Write(array, offset, length);
+            if(append)
+            {
+                fileStream.Position = fileStream.Length;
+                fileStream.Write(array, offset, length);
+            }
+            else
+            {
+                fileStream.Position = 0;
+                fileStream.Write(array, offset, length);
+            }
             fileStream.Flush();
         }
 

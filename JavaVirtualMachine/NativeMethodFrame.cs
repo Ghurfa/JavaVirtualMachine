@@ -140,6 +140,14 @@ namespace JavaVirtualMachine
                         return;
                     }
                 }
+                else if(className == "java/io/FileOutputStream" && nameAndDescriptor == ("close0", "()V"))
+                {
+                    string path = JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;"));
+                    FileStreams.Close(path);
+                    obj.SetField("closed", "Z", 1);
+                    JavaHelper.ReturnVoid();
+                    return;
+                }
                 else if (className == "java/io/FileOutputStream" && nameAndDescriptor == ("initIDs", "()V"))
                 {
                     JavaHelper.ReturnVoid();
@@ -198,7 +206,7 @@ namespace JavaVirtualMachine
                         string path = JavaHelper.ReadJavaString(pathField);
                         HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
 
-                        FileStreams.WriteBytes(path, (byte[])javaByteArr.Array, offset, length);
+                        FileStreams.WriteBytes(path, (byte[])javaByteArr.Array, offset, length, append);
 
                         JavaHelper.ReturnVoid();
                         return;
@@ -227,6 +235,28 @@ namespace JavaVirtualMachine
                     Console.WriteLine(charArr);
                     JavaHelper.ReturnVoid();
                     return;
+                }
+                else if(className == "java/io/WinNTFileSystem" && nameAndDescriptor == ("createFileExclusively", "(Ljava/lang/String;)Z"))
+                {
+                    string path = JavaHelper.ReadJavaString(Args[1]);
+                    try
+                    {
+                        if (File.Exists(path))
+                        {
+                            JavaHelper.ReturnValue(0);
+                            return;
+                        }
+                        else
+                        {
+                            File.Create(path);
+                            JavaHelper.ReturnValue(1);
+                            return;
+                        }
+                    }
+                    catch(IOException)
+                    {
+                        JavaHelper.ThrowJavaException("java/io/IOException");
+                    }
                 }
                 else if (className == "java/io/WinNTFileSystem" && nameAndDescriptor == ("getBooleanAttributes", "(Ljava/io/File;)I"))
                 {
