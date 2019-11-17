@@ -172,17 +172,25 @@ namespace JavaVirtualMachine
                     {
                         HeapObject fileDescriptor = Heap.GetObject(((FieldReferenceValue)obj.GetField("fd", "Ljava/io/FileDescriptor;")).Address);
                         long handle = ((FieldLargeNumber)fileDescriptor.GetField("handle", "J")).Value; //address (defined in java/io/FileDescriptor set(int))
-                        if (handle != 1)
-                        {
-                            JavaHelper.ThrowJavaException("java/io/IOException");
-                        }
-                        else
+                        if (handle == 1)
                         {
                             HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
                             FileStreams.WriteBytesToConsole((byte[])javaByteArr.Array, offset, length);
 
                             JavaHelper.ReturnVoid();
                             return;
+                        }
+                        else if (handle == 2)
+                        {
+                            HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
+                            FileStreams.WriteBytesToError((byte[])javaByteArr.Array, offset, length);
+
+                            JavaHelper.ReturnVoid();
+                            return;
+                        }
+                        else
+                        {
+                            JavaHelper.ThrowJavaException("java/io/IOException");
                         }
                     }
                     else
