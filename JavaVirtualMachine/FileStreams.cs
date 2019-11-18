@@ -62,10 +62,12 @@ namespace JavaVirtualMachine
 
         public static void WriteBytesToConsole(byte[] array, int offset, int length)
         {
+            Console.ForegroundColor = ConsoleColor.White;
             ConsoleOutputStream.Write(array, offset, length);
         }
         public static void WriteBytesToError(byte[] array, int offset, int length)
         {
+            Console.ForegroundColor = ConsoleColor.White;
             ConsoleErrorStream.Write(array, offset, length);
         }
 

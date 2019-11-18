@@ -8,14 +8,14 @@ namespace JavaVirtualMachine
     public static class DebugWriter
     {
         public static int Depth = 0;
-        public static bool WriteDebugMessages = false;
+        public static bool WriteDebugMessages = true;
         const int Spacing = 2;
-        const ConsoleColor DebugColor = ConsoleColor.DarkGray;
+        const ConsoleColor DebugDefaultColor = ConsoleColor.DarkGray;
         const ConsoleColor NativeMethodColor = ConsoleColor.Green;
         const ConsoleColor ExceptionThrownColor = ConsoleColor.Yellow;
         public static void WriteDebugMessage(string message)
         {
-            Console.ForegroundColor = DebugColor;
+            Console.ForegroundColor = DebugDefaultColor;
             Console.WriteLine(message);
         }
         public static void CallFuncDebugWrite(MethodInfo methodInfo, int[] args)
@@ -28,10 +28,10 @@ namespace JavaVirtualMachine
                 }
                 else
                 {
-                    Console.ForegroundColor = DebugColor;
+                    Console.ForegroundColor = DebugDefaultColor;
                 }
                 Console.Write($"{new string(' ', Depth * Spacing)}{methodInfo.ClassFile.Name}.{methodInfo.Name}");
-                WriteArgs(args);
+                WriteArgs(methodInfo.Descriptor, methodInfo.HasFlag(MethodInfoFlag.Static), args);
                 Console.WriteLine();
             }
             Depth++;
@@ -40,9 +40,10 @@ namespace JavaVirtualMachine
         {
             if (WriteDebugMessages)
             {
-                Console.ForegroundColor = DebugColor;
+                Console.ForegroundColor = DebugDefaultColor;
                 Console.Write($"{new string(' ', Depth * Spacing)}{classOfFuncName}.{interfaceMethodInfo.Name}");
-                WriteArgs(args);
+                throw new NotImplementedException();
+                WriteArgs(interfaceMethodInfo.Descriptor, true, args);
                 Console.Write($"   (interface {interfaceMethodInfo.ClassName})");
                 Console.WriteLine();
             }
@@ -53,7 +54,7 @@ namespace JavaVirtualMachine
             Depth--;
             if (WriteDebugMessages)
             {
-                Console.ForegroundColor = DebugColor;
+                Console.ForegroundColor = DebugDefaultColor;
                 Console.WriteLine($"{new string(' ', Depth * Spacing)}Returned {returnValue}");
             }
         }
@@ -62,7 +63,7 @@ namespace JavaVirtualMachine
             Depth--;
             if (WriteDebugMessages)
             {
-                Console.ForegroundColor = DebugColor;
+                Console.ForegroundColor = DebugDefaultColor;
                 Console.WriteLine($"{new string(' ', Depth * Spacing)}Returned {returnValue} (large num)");
             }
         }
@@ -71,7 +72,7 @@ namespace JavaVirtualMachine
             Depth--;
             if (WriteDebugMessages)
             {
-                Console.ForegroundColor = DebugColor;
+                Console.ForegroundColor = DebugDefaultColor;
                 Console.WriteLine($"{new string(' ', Depth * Spacing)}Returned void");
             }
         }
@@ -84,20 +85,64 @@ namespace JavaVirtualMachine
                 Console.WriteLine($"{new string(' ', Depth * Spacing)}Threw {exception.ClassFile.Name} ({exception.Message})");
             }
         }
-        private static void WriteArgs(int[] args)
+        private static void WriteArgs(string descriptor, bool isStatic, int[] args)
         {
             if (WriteDebugMessages)
             {
+                int argIndex = 0;
+                int i;
                 Console.Write("(");
-                for (int i = 0; i < args.Length; i++)
+                for (i = 1; descriptor[i] != ')';)
                 {
-                    Console.Write(args[i]);
-                    if (i < args.Length - 1)
+                    if(i != 1)
                     {
                         Console.Write(", ");
                     }
+                    if (descriptor[i] == 'J' || descriptor[i] == 'D')
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        long argument = (args[argIndex], args[argIndex + 1]).ToLong();
+                        Console.Write(descriptor[i] == 'J' ? argument.ToString() : JavaHelper.StoredDoubleToDouble(argument).ToString());
+                        argIndex += 2;
+                        i++;
+                    }
+                    else
+                    {
+                        int argument = args[argIndex];
+                        //Move to next arg
+                        if (descriptor[i] == '[')
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.Write('[');
+                            i++;
+                        }
+                        if (descriptor[i] == 'L')
+                        {
+                            for (i++; descriptor[i] != ';'; i++) ;
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write(Heap.GetObject(argument).ClassFile.Name);
+
+                            Console.ForegroundColor = ConsoleColor.White;
+                            Console.Write('/');
+
+                            Console.ForegroundColor = ConsoleColor.DarkRed;
+                            Console.Write(argument);
+                            argIndex++;
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.White;
+                            Console.Write(argument);
+                            argIndex++;
+                        }
+                        i++;
+                    }
                 }
                 Console.Write(')');
+                if(args.Length > 3)
+                {
+
+                }
             }
         }
         public static void PrintStack()
@@ -107,7 +152,7 @@ namespace JavaVirtualMachine
         }
         public static void PrintStack(MethodFrame[] stack)
         {
-            Console.ForegroundColor = DebugColor;
+            Console.ForegroundColor = DebugDefaultColor;
             Console.WriteLine("\nStack:");
             Program.MethodFrameStack.CopyTo(stack, 0);
             for (int i = stack.Length - 1; i >= 0; i--)

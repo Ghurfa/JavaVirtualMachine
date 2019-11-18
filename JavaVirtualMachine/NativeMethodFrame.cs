@@ -362,7 +362,6 @@ namespace JavaVirtualMachine
                     {
                         if (method.Name == "<init>")
                         {
-
                             string descriptor = method.Descriptor;
                             string descriptorArgs = descriptor.Split('(', ')')[1];
                             int[] parameterTypes;
@@ -372,6 +371,7 @@ namespace JavaVirtualMachine
                             }
                             else
                             {
+                                throw new NotImplementedException();
                                 string[] parameterDescriptors = descriptorArgs.Split(',');
                                 parameterTypes = new int[parameterDescriptors.Length];
                                 for (int j = 0; j < parameterTypes.Length; j++)
@@ -1468,6 +1468,7 @@ namespace JavaVirtualMachine
 
                     HeapObject constructorObj = Heap.GetObject(constructorAddr);
 
+                    //Get args
                     ClassFile constructorClassFile = ClassFileManager.GetClassFile("java/lang/reflect/Constructor");
                     MethodInfo getDeclaringClassMethod = constructorClassFile.MethodDictionary[("getDeclaringClass", "()Ljava/lang/Class;")];
                     JavaHelper.RunJavaFunction(getDeclaringClassMethod, constructorAddr);
@@ -1476,10 +1477,12 @@ namespace JavaVirtualMachine
                     FieldReferenceValue declaringClassName = (FieldReferenceValue)declaringClassClassObj.GetField("name", "Ljava/lang/String;");
                     ClassFile declaringClass = ClassFileManager.GetClassFile(JavaHelper.ReadJavaString(declaringClassName));
 
+                    //Get slot
                     MethodInfo getSlotMethod = constructorClassFile.MethodDictionary[("getSlot", "()I")];
                     JavaHelper.RunJavaFunction(getSlotMethod, constructorAddr);
                     int slot = Utility.PopInt(Stack, ref sp);
 
+                    //Find constructor
                     MethodInfo constructorMethod = null;
                     int i = 0;
                     foreach (MethodInfo method in declaringClass.MethodDictionary.Values)
@@ -1492,9 +1495,11 @@ namespace JavaVirtualMachine
                         i++;
                     }
 
+                    //Create object
                     HeapObject newObject = new HeapObject(declaringClass);
                     int newObjectAddr = Heap.AddItem(newObject);
 
+                    //Copy arguments to arguments array
                     int[] arguments;
                     if (argsArrAddr == 0)
                     {
@@ -1509,6 +1514,7 @@ namespace JavaVirtualMachine
                         args.CopyTo(arguments, 1);
                     }
 
+                    //Run constructor
                     JavaHelper.RunJavaFunction(constructorMethod, arguments);
                     JavaHelper.ReturnValue(newObjectAddr);
 
@@ -1536,7 +1542,6 @@ namespace JavaVirtualMachine
             }
             catch (JavaException ex)
             {
-                //No exception handling (yet)
                 DebugWriter.ExceptionThrownDebugWrite(ex);
                 if (Program.MethodFrameStack.Count > 1)
                 {

@@ -7,10 +7,10 @@ namespace JavaVirtualMachine
 {
     public static class JavaHelper
     {
-        public static int NumOfArgs(this MethodInfo method) => numOfArgs(method.Descriptor);
-        public static int NumOfArgs(this CMethodRefInfo methodRef) => numOfArgs(methodRef.Descriptor);
-        public static int NumOfArgs(this CInterfaceMethodRefInfo interfaceMethodRef) => numOfArgs(interfaceMethodRef.Descriptor);
-        private static int numOfArgs(string descriptor)
+        public static int NumOfArgs(this MethodInfo method) => NumOfArgs(method.Descriptor);
+        public static int NumOfArgs(this CMethodRefInfo methodRef) => NumOfArgs(methodRef.Descriptor);
+        public static int NumOfArgs(this CInterfaceMethodRefInfo interfaceMethodRef) => NumOfArgs(interfaceMethodRef.Descriptor);
+        public static int NumOfArgs(string descriptor)
         {
             int numOfArgs = 0;
             int i;
