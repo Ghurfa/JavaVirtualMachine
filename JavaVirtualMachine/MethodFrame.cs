@@ -1847,7 +1847,7 @@ namespace JavaVirtualMachine
                             parentFrame.Stack[0] = Utility.PopInt(Stack, ref sp);
                         }
                         Program.MethodFrameStack.Pop();
-                        throw ex;
+                        throw;
                     }
                 }
             }

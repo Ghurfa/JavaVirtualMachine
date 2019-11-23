@@ -42,7 +42,6 @@ namespace JavaVirtualMachine
             {
                 Console.ForegroundColor = DebugDefaultColor;
                 Console.Write($"{new string(' ', Depth * Spacing)}{classOfFuncName}.{interfaceMethodInfo.Name}");
-                throw new NotImplementedException();
                 WriteArgs(interfaceMethodInfo.Descriptor, true, args);
                 Console.Write($"   (interface {interfaceMethodInfo.ClassName})");
                 Console.WriteLine();
@@ -89,18 +88,49 @@ namespace JavaVirtualMachine
         {
             if (WriteDebugMessages)
             {
+                ConsoleColor originalColor = Console.ForegroundColor;
+                ConsoleColor arrayBracketColor = ConsoleColor.Red;
+                ConsoleColor nullColor = ConsoleColor.DarkGreen;
+                ConsoleColor stringColor = ConsoleColor.DarkGreen;
+                ConsoleColor classObjColor = ConsoleColor.DarkBlue;
+                ConsoleColor classNameColor = ConsoleColor.Blue;
+                ConsoleColor separatorColor = ConsoleColor.White;
+                ConsoleColor objAddrColor = ConsoleColor.Cyan;
+                ConsoleColor numberColor = ConsoleColor.White;
+                ConsoleColor wideNumberColor = ConsoleColor.DarkYellow;
                 int argIndex = 0;
                 int i;
                 Console.Write("(");
+                if(!isStatic)
+                {
+                    int callerAddr = args[0];
+                    ClassFile argCFile = Heap.GetObject(callerAddr).ClassFile;
+                    if(argCFile.Name == "java/lang/Class")
+                    {
+                        Console.ForegroundColor = classObjColor;
+                        Console.Write(JavaHelper.ClassObjectName(callerAddr));
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = classNameColor;
+                        Console.Write(Heap.GetObject(callerAddr).ClassFile.Name);
+                    }
+                    Console.ForegroundColor = separatorColor;
+                    Console.Write('/');
+
+                    Console.ForegroundColor = objAddrColor;
+                    Console.Write(callerAddr);
+                    argIndex++;
+                }
                 for (i = 1; descriptor[i] != ')';)
                 {
-                    if(i != 1)
+                    if(!isStatic || i != 1)
                     {
                         Console.Write(", ");
                     }
                     if (descriptor[i] == 'J' || descriptor[i] == 'D')
                     {
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.ForegroundColor = wideNumberColor;
                         long argument = (args[argIndex], args[argIndex + 1]).ToLong();
                         Console.Write(descriptor[i] == 'J' ? argument.ToString() : JavaHelper.StoredDoubleToDouble(argument).ToString());
                         argIndex += 2;
@@ -112,37 +142,55 @@ namespace JavaVirtualMachine
                         //Move to next arg
                         if (descriptor[i] == '[')
                         {
-                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.ForegroundColor = arrayBracketColor;
                             Console.Write('[');
                             i++;
                         }
                         if (descriptor[i] == 'L')
                         {
                             for (i++; descriptor[i] != ';'; i++) ;
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Write(Heap.GetObject(argument).ClassFile.Name);
+                            if (argument == 0)
+                            {
+                                Console.ForegroundColor = nullColor;
+                                Console.Write("Null");
+                            }
+                            else
+                            {
+                                ClassFile argCFile = Heap.GetObject(argument).ClassFile;
+                                if(argCFile.Name == "java/lang/String")
+                                {
+                                    Console.ForegroundColor = stringColor;
+                                    Console.Write('"' + JavaHelper.ReadJavaString(argument) + '"');
+                                }
+                                else if(argCFile.Name == "java/lang/Class")
+                                {
+                                    Console.ForegroundColor = classObjColor;
+                                    Console.Write(JavaHelper.ClassObjectName(argument));
+                                }
+                                else
+                                {
+                                    Console.ForegroundColor = classNameColor;
+                                    Console.Write(Heap.GetObject(argument).ClassFile.Name);
+                                }
+                                Console.ForegroundColor = separatorColor;
+                                Console.Write('/');
 
-                            Console.ForegroundColor = ConsoleColor.White;
-                            Console.Write('/');
-
-                            Console.ForegroundColor = ConsoleColor.DarkRed;
-                            Console.Write(argument);
+                                Console.ForegroundColor = objAddrColor;
+                                Console.Write(argument);
+                            }
                             argIndex++;
                         }
                         else
                         {
-                            Console.ForegroundColor = ConsoleColor.White;
+                            Console.ForegroundColor = numberColor;
                             Console.Write(argument);
                             argIndex++;
                         }
                         i++;
                     }
                 }
+                Console.ForegroundColor = originalColor;
                 Console.Write(')');
-                if(args.Length > 3)
-                {
-
-                }
             }
         }
         public static void PrintStack()

@@ -288,5 +288,15 @@ namespace JavaVirtualMachine
                     throw new ArgumentException();
             }
         }
+
+        public static string ClassObjectName(int classObjAddr)
+        {
+            return ClassObjectName(Heap.GetObject(classObjAddr));
+        }
+        public static string ClassObjectName(HeapObject classObj)
+        {
+            FieldReferenceValue nameField = (FieldReferenceValue)classObj.GetField("name", "Ljava/lang/String;");
+            return ReadJavaString(nameField.Address);
+        }
     }
 }

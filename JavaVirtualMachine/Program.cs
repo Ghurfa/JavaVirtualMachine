@@ -39,7 +39,7 @@ namespace JavaVirtualMachine
             }
             catch(JavaException ex)
             {
-                if (ex.ClassFile.Name != "java/lang/IllegalStateException") throw ex;
+                if (ex.ClassFile.Name != "java/lang/IllegalStateException") throw;
             }
 
             ClassFile mainProg = ClassFileManager.GetClassFile("Program");
@@ -78,7 +78,7 @@ namespace JavaVirtualMachine
                 {
                     try
                     {
-                        JavaHelper.RunJavaFunction(method.Value, mainProgObjAddr);
+                        JavaHelper.RunJavaFunction(method.Value, mainProgObjAddr, 0);
                         Console.WriteLine("End of program");
                     }
                     catch (JavaException ex)

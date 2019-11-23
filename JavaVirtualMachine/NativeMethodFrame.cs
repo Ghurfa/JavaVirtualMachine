@@ -289,7 +289,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("getComponentType", "()Ljava/lang/Class;"))
                 {
-                    string name = JavaHelper.ReadJavaString(((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")).Address);
+                    string name = JavaHelper.ClassObjectName(obj);
                     if (!name.StartsWith('['))
                     {
                         JavaHelper.ReturnValue(0);
@@ -303,7 +303,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("getEnclosingMethod0", "()[Ljava/lang/Object;"))
                 {
-                    string name = JavaHelper.ReadJavaString(((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")).Address);
+                    string name = JavaHelper.ClassObjectName(obj);
                     ClassFile cFile = ClassFileManager.GetClassFile(name);
                     foreach (AttributeInfo attribute in cFile.Attributes)
                     {
@@ -317,14 +317,14 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("isArray", "()Z"))
                 {
-                    string name = JavaHelper.ReadJavaString(((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")).Address);
+                    string name = JavaHelper.ClassObjectName(obj);
                     bool isArray = name[0] == '[';
                     JavaHelper.ReturnValue(isArray ? 1 : 0);
                     return;
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("isPrimitive", "()Z"))
                 {
-                    string name = JavaHelper.ReadJavaString(((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")).Address);
+                    string name = JavaHelper.ClassObjectName(obj);
                     bool isPrimitive = name == "boolean" || name == "char" || name == "byte" || name == "short" || name == "int" || name == "long" || name == "float" || name == "double" || name == "void";
                     JavaHelper.ReturnValue(isPrimitive ? 1 : 0);
                     return;
@@ -350,7 +350,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("getDeclaredConstructors0", "(Z)[Ljava/lang/reflect/Constructor;"))
                 {
-                    ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")));
+                    ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ClassObjectName(obj));
 
                     ClassFile constructorClassFile = ClassFileManager.GetClassFile("java/lang/reflect/Constructor");
                     MethodInfo constructorConstructor = constructorClassFile.MethodDictionary[("<init>", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)V")];
@@ -488,7 +488,7 @@ namespace JavaVirtualMachine
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("getDeclaredFields0", "(Z)[Ljava/lang/reflect/Field;"))
                 {
                     bool publicOnly = Args[1] != 0;
-                    ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")));
+                    ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ClassObjectName(obj));
                     int length;
                     if (publicOnly)
                     {
@@ -556,7 +556,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("getDeclaringClass0", "()Ljava/lang/Class;"))
                 {
-                    string name = JavaHelper.ReadJavaString(((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")).Address);
+                    string name = JavaHelper.ClassObjectName(obj);
                     ClassFile cFile = ClassFileManager.GetClassFile(name);
                     foreach (AttributeInfo attribute in cFile.Attributes)
                     {
@@ -578,7 +578,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("getModifiers", "()I"))
                 {
-                    ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;")));
+                    ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ClassObjectName(obj));
 
                     JavaHelper.ReturnValue(cFile.AccessFlags);
                     return;
@@ -1550,7 +1550,7 @@ namespace JavaVirtualMachine
                     Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, Utility.PopInt(Stack, ref sp)); //push address of exception onto parent stack
                 }
                 Program.MethodFrameStack.Pop();
-                throw ex;
+                throw;
             }
         }
     }
