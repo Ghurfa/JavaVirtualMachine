@@ -14,6 +14,7 @@ namespace JavaVirtualMachine
         static void Main(string[] args)
         {
             Stopwatch.Start();
+            Console.WindowWidth = 180;
 
             //%JAVA_HOME%\bin\javap" - s -p -c -verbose Scanner.class > ..\..\..\Scanner.javap
             ClassFileManager.InitDictionary(@"\\GMRDC1\Folder Redirection\Lorenzo.Lopez\Desktop\rt\",

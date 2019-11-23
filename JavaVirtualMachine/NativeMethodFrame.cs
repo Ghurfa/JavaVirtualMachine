@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.Text;
 
@@ -26,7 +27,13 @@ namespace JavaVirtualMachine
                 HeapObject obj = null;
                 if (!MethodInfo.HasFlag(MethodInfoFlag.Static)) obj = Heap.GetObject(Args[0]);
 
-                if (className == "java/io/FileDescriptor" && nameAndDescriptor == ("initIDs", "()V"))
+                if(className == "Program" && nameAndDescriptor == ("ToggleDebugWrite", "(Z)V"))
+                {
+                    DebugWriter.WriteDebugMessages = Args[0] != 0;
+                    JavaHelper.ReturnVoid();
+                    return;
+                }
+                else if (className == "java/io/FileDescriptor" && nameAndDescriptor == ("initIDs", "()V"))
                 {
                     JavaHelper.ReturnVoid();
                     return;
@@ -985,6 +992,10 @@ namespace JavaVirtualMachine
                 }
                 else if(className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("socket0", "(ZZ)I"))
                 {
+                    bool stream = Args[0] != 0;
+                    bool v6Only = Args[1] != 0;
+                    Socket socket = new Socket(stream ? SocketType.Stream : SocketType.Dgram, v6Only ? ProtocolType.Tcp : ProtocolType.IcmpV6);
+                    //socket.
                     throw new NotImplementedException();
                 }
                 else if(className == "java/net/Inet4Address" && nameAndDescriptor == ("init", "()V"))
