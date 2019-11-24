@@ -834,7 +834,7 @@ namespace JavaVirtualMachine
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("os.name"),
                                                                         JavaHelper.CreateJavaStringLiteral(Environment.OSVersion.Platform.ToString())); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("os.version"),
-                                                                        JavaHelper.CreateJavaStringLiteral(Environment.OSVersion.VersionString)); Utility.PopInt(Stack, ref sp);
+                                                                        JavaHelper.CreateJavaStringLiteral(Environment.OSVersion.Version.Major.ToString())); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("file.separator"),
                                                                         JavaHelper.CreateJavaStringLiteral(Path.DirectorySeparatorChar.ToString())); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("path.separator"),
@@ -994,9 +994,10 @@ namespace JavaVirtualMachine
                 {
                     bool stream = Args[0] != 0;
                     bool v6Only = Args[1] != 0;
-                    Socket socket = new Socket(stream ? SocketType.Stream : SocketType.Dgram, v6Only ? ProtocolType.Tcp : ProtocolType.IcmpV6);
-                    //socket.
-                    throw new NotImplementedException();
+                    //Socket socket = new Socket(stream ? SocketType.Stream : SocketType.Dgram, v6Only ? ProtocolType.IcmpV6 : ProtocolType.Tcp);
+                    //temp
+                    JavaHelper.ReturnValue(0);
+                    return;
                 }
                 else if(className == "java/net/Inet4Address" && nameAndDescriptor == ("init", "()V"))
                 {
