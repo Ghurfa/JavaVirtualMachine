@@ -57,12 +57,19 @@ namespace JavaVirtualMachine
             }
             Depth++;
         }
-        public static void CallFuncDebugWrite(CInterfaceMethodRefInfo interfaceMethodInfo, int[] args, string classOfFuncName)
+        public static void CallFuncDebugWrite(MethodInfo methodInfo, int[] args, CInterfaceMethodRefInfo interfaceMethodInfo)
         {
             if (WriteDebugMessages)
             {
-                Console.ForegroundColor = DebugDefaultColor;
-                Console.Write($"{new string(' ', Depth * Spacing)}{classOfFuncName}.{interfaceMethodInfo.Name}");
+                if (methodInfo.HasFlag(MethodInfoFlag.Native))
+                {
+                    Console.ForegroundColor = NativeMethodColor;
+                }
+                else
+                {
+                    Console.ForegroundColor = DebugDefaultColor;
+                }
+                Console.Write($"{new string(' ', Depth * Spacing)}{methodInfo.ClassFile.Name}.{methodInfo.Name}");
                 WriteArgs(interfaceMethodInfo.Descriptor, true, args);
                 Console.Write($"   (interface {interfaceMethodInfo.ClassName})");
                 Console.WriteLine();

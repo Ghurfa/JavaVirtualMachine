@@ -245,6 +245,16 @@ namespace JavaVirtualMachine
                     JavaHelper.ReturnVoid();
                     return;
                 }
+                else if(className == "java/io/WinNTFileSystem" && nameAndDescriptor == ("canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;"))
+                {
+                    string input = JavaHelper.ReadJavaString(Args[1]);
+                    
+                    string absoluteForm = Path.GetFullPath(input);
+                    //not finished
+
+                    JavaHelper.ReturnValue(JavaHelper.CreateJavaStringLiteral(absoluteForm));
+                    return;
+                }
                 else if (className == "java/io/WinNTFileSystem" && nameAndDescriptor == ("createFileExclusively", "(Ljava/lang/String;)Z"))
                 {
                     string path = JavaHelper.ReadJavaString(Args[1]);
@@ -985,6 +995,10 @@ namespace JavaVirtualMachine
                     return;
 
                 }
+                else if(className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("connect0", "(ILjava/net/InetAddress;I)I"))
+                {
+
+                }
                 else if(className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("initIDs", "()V"))
                 {
                     JavaHelper.ReturnVoid();
@@ -1004,21 +1018,32 @@ namespace JavaVirtualMachine
                     JavaHelper.ReturnVoid();
                     return;
                 }
+                else if(className == "java/net/Inet6Address" && nameAndDescriptor == ("init", "()V"))
+                {
+                    JavaHelper.ReturnVoid();
+                    return;
+                }
+                else if(className == "java/net/Inet6AddressImpl" && nameAndDescriptor == ("getLocalHostName", "()Ljava/lang/String;"))
+                {
+                    string name = Dns.GetHostName();
+                    JavaHelper.ReturnValue(JavaHelper.CreateJavaStringLiteral(name));
+                    return;
+                }
                 else if(className == "java/net/Inet6AddressImpl" && nameAndDescriptor == ("lookupAllHostAddr", "(Ljava/lang/String;)[Ljava/net/InetAddress;"))
                 {
                     string hostName = JavaHelper.ReadJavaString(Args[1]);
                     IPAddress[] addresses = Dns.GetHostAddresses(hostName);
 
-                    ClassFile inetAddressCFile = ClassFileManager.GetClassFile("java/net/InetAddress");
-                    MethodInfo constructor = inetAddressCFile.MethodDictionary[("<init>", "()V")];
+                    ClassFile inet6AddressCFile = ClassFileManager.GetClassFile("java/net/Inet6Address");
+                    MethodInfo constructor = inet6AddressCFile.MethodDictionary[("<init>", "()V")];
 
                     int[] innerArray = new int[addresses.Length];
-                    HeapArray javaAddressesArray = new HeapArray(innerArray, ClassObjectManager.GetClassObjectAddr("java/net/InetAddress"));
+                    HeapArray javaAddressesArray = new HeapArray(innerArray, ClassObjectManager.GetClassObjectAddr("java/net/Inet6Address"));
                     int arrayAddr = Heap.AddItem(javaAddressesArray);
 
                     for (int i = 0; i < addresses.Length; i++)
                     {
-                        int newObjAddr = Heap.AddItem(new HeapObject(inetAddressCFile));
+                        int newObjAddr = Heap.AddItem(new HeapObject(inet6AddressCFile));
                         innerArray[i] = newObjAddr;
                         JavaHelper.RunJavaFunction(constructor, newObjAddr);
                     }

@@ -1624,14 +1624,14 @@ namespace JavaVirtualMachine
 
                                 if (!method.HasFlag(MethodInfoFlag.Native))
                                 {
-                                    DebugWriter.CallFuncDebugWrite(interfaceMethodRef, arguments, cFile.Name);
+                                    DebugWriter.CallFuncDebugWrite(method, arguments, interfaceMethodRef);
                                     MethodFrame methodFrame = new MethodFrame(method);
                                     arguments.CopyTo(methodFrame.Locals, 0);
                                     methodFrame.Execute();
                                 }
                                 else
                                 {
-                                    DebugWriter.CallFuncDebugWrite(interfaceMethodRef, arguments, cFile.Name);
+                                    DebugWriter.CallFuncDebugWrite(method, arguments, interfaceMethodRef);
                                     NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
                                     {
                                         Args = arguments
