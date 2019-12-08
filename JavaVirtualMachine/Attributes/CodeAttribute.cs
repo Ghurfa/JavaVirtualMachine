@@ -79,7 +79,8 @@ namespace JavaVirtualMachine.Attributes
                         AttributeInfo[i] = new LocalVariableTableAttribute(ref infoAsSpan, constants);
                         break;
                     case "LocalVariableTypeTable":
-                        throw new NotImplementedException();
+                        AttributeInfo[i] = new LocalVariableTypeTableAttribute(ref infoAsSpan, constants);
+                        break;
                     default:
                         AttributeInfo[i] = new AttributeInfo(ref infoAsSpan, constants);
                         break;
