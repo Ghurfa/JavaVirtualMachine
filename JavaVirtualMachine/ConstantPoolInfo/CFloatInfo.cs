@@ -6,14 +6,14 @@ namespace JavaVirtualMachine.ConstantPoolInfo
 {
     class CFloatInfo : CPInfo
     {
-        public uint Bytes { get; private set; }
+        public uint IntValue { get; private set; }
         public readonly float FloatValue;
         public CFloatInfo(ref ReadOnlySpan<byte> span) : base(ref span)
         {
-            Bytes = span.ReadFour();
+            IntValue = span.ReadFour();
             unsafe
             {
-                uint temp = Bytes;
+                uint temp = IntValue;
                 FloatValue = *(float*)(&temp);
             }
         }

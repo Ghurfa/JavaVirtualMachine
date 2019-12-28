@@ -331,11 +331,11 @@ namespace JavaVirtualMachine
 
                                 if (value.GetType() == typeof(CIntegerInfo))
                                 {
-                                    Utility.Push(ref Stack, ref sp, ((CIntegerInfo)value).Bytes);
+                                    Utility.Push(ref Stack, ref sp, ((CIntegerInfo)value).IntValue);
                                 }
                                 else if (value.GetType() == typeof(CFloatInfo))
                                 {
-                                    Utility.Push(ref Stack, ref sp, (int)(((CFloatInfo)value).Bytes));
+                                    Utility.Push(ref Stack, ref sp, (int)(((CFloatInfo)value).IntValue));
                                 }
                                 else if (value.GetType() == typeof(CStringInfo))
                                 {
@@ -356,11 +356,11 @@ namespace JavaVirtualMachine
 
                                 if (value.GetType() == typeof(CIntegerInfo))
                                 {
-                                    Utility.Push(ref Stack, ref sp, ((CIntegerInfo)value).Bytes);
+                                    Utility.Push(ref Stack, ref sp, ((CIntegerInfo)value).IntValue);
                                 }
                                 else if (value.GetType() == typeof(CFloatInfo))
                                 {
-                                    Utility.Push(ref Stack, ref sp, Stack[sp++] = (int)((CFloatInfo)value).Bytes);
+                                    Utility.Push(ref Stack, ref sp, Stack[sp++] = (int)((CFloatInfo)value).IntValue);
                                 }
                                 else if (value.GetType() == typeof(CStringInfo))
                                 {
@@ -1508,7 +1508,7 @@ namespace JavaVirtualMachine
                                 ClassFile cFile;
                                 if ((OpCodes)opCode == OpCodes.invokevirtual)
                                 {
-                                    string objectRefClassFileName = ((HeapObject)(Heap.GetItem(arguments[0]))).ClassFile.Name;
+                                    string objectRefClassFileName = Heap.GetObject(arguments[0]).ClassFile.Name;
                                     cFile = ClassFileManager.GetClassFile(objectRefClassFileName);
                                 }
                                 else
@@ -1562,11 +1562,6 @@ namespace JavaVirtualMachine
                                 while (!cFile.MethodDictionary.TryGetValue((methodRef.Name, methodRef.Descriptor), out method))
                                 {
                                     cFile = cFile.SuperClass;
-                                }
-
-                                if (method.Name == "searchFields")
-                                {
-
                                 }
 
                                 if (!method.HasFlag(MethodInfoFlag.Native))
@@ -1637,6 +1632,90 @@ namespace JavaVirtualMachine
                                         Args = arguments
                                     };
                                     nativeMethodFrame.Execute();
+                                }
+                            }
+                            break;
+                        case OpCodes.invokedynamic:
+                            {
+                                //https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
+                                //https://docs.oracle.com/javase/8/docs/technotes/guides/vm/multiple-language-support.html
+                                short index = readShort(code, ref ip);
+                                CInvokeDynamicInfo symbolicRef = (CInvokeDynamicInfo)ClassFile.Constants[index];
+
+                                ip += 2; //Third and fourth bytes are zero
+
+                                CMethodRefInfo bootstrapMethodRef = (CMethodRefInfo)symbolicRef.BootstrapMethod.MethodHandle.Reference;
+                                
+                                ClassFile cFile = ClassFileManager.GetClassFile(bootstrapMethodRef.ClassName);
+
+                                int[] arguments = new int[bootstrapMethodRef.NumOfArgs()];
+                                //arguments[0] = 
+                                //arguments[1] =  
+                                arguments[2] = JavaHelper.CreateJavaStringLiteral(symbolicRef.Name);
+                                //arguments[3] = 
+                                for(int i = 4; i < arguments.Length; i++)
+                                {
+                                    CPInfo constant = symbolicRef.BootstrapMethod.Arguments[i - 4];
+                                    switch (constant)
+                                    {
+                                        case CClassInfo classInfo:
+                                            arguments[i] = ClassObjectManager.GetClassObjectAddr(classInfo);
+                                            throw new NotImplementedException();
+                                        case CMethodHandleInfo methodHandle:
+                                            break;
+                                        case CMethodTypeInfo methodType:
+                                            break;
+                                        case CStringInfo stringVal:
+                                            arguments[i] = JavaHelper.CreateJavaStringLiteral(stringVal.String);
+                                            break;
+                                        case CIntegerInfo intVal:
+                                            arguments[i] = intVal.IntValue;
+                                            break;
+                                        case CLongInfo longVal:
+                                            {
+                                                (int low, int high) = longVal.LongValue.Split();
+                                                arguments[i] = low;
+                                                arguments[++i] = high;
+                                            }
+                                            break;
+                                        case CFloatInfo floatVal:
+                                            arguments[i] = (int)floatVal.IntValue;
+                                            break;
+                                        case CDoubleInfo doubleVal:
+                                            {
+                                                (int low, int high) = doubleVal.LongValue.Split();
+                                                arguments[i] = low;
+                                                arguments[++i] = high;
+                                            }
+                                            break;
+                                        default:
+                                            throw new InvalidOperationException();
+                                    }
+                                }
+
+
+                                //Search for method in cFile's staticMethodDictionary. If it's not there, repeat search in cFile's super and so on
+                                MethodInfo method;
+                                while (!cFile.MethodDictionary.TryGetValue((bootstrapMethodRef.Name, bootstrapMethodRef.Descriptor), out method))
+                                {
+                                    cFile = cFile.SuperClass;
+                                }
+
+                                if (method.HasFlag(MethodInfoFlag.Native))
+                                {
+                                    DebugWriter.CallFuncDebugWrite(method, arguments);
+                                    NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
+                                    {
+                                        Args = arguments
+                                    };
+                                    nativeMethodFrame.Execute();
+                                }
+                                else
+                                {
+                                    DebugWriter.CallFuncDebugWrite(method, arguments);
+                                    MethodFrame methodFrame = new MethodFrame(method);
+                                    arguments.CopyTo(methodFrame.Locals, 0);
+                                    methodFrame.Execute();
                                 }
                             }
                             break;

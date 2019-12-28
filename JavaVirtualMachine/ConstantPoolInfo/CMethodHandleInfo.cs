@@ -4,15 +4,30 @@ using System.Text;
 
 namespace JavaVirtualMachine.ConstantPoolInfo
 {
+    public enum MethodHandleRefKind
+    {
+        getField = 1,
+        getStatic = 2,
+        putField = 3,
+        putStatic = 4,
+        invokeVirtual = 5,
+        invokeStatic = 6,
+        invokeSpecial = 7,
+        newInvokeSpecial = 8,
+        invokeInterface = 9
+    }
+
     public class CMethodHandleInfo : CPInfo
     {
-        public readonly byte ReferenceKind;
-        public readonly ushort ReferenceIndex;
+        private readonly ushort ReferenceIndex;
         public CPInfo Reference;
+        public readonly MethodHandleRefKind Kind;
         public CMethodHandleInfo(ref ReadOnlySpan<byte> span) : base(ref span)
         {
-            ReferenceKind = span.ReadOne();
+            byte referenceKind = span.ReadOne();
             ReferenceIndex = span.ReadTwo();
+
+            Kind = (MethodHandleRefKind)referenceKind;
         }
 
         public override void Update(CPInfo[] constants)

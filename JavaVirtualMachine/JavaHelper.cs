@@ -285,8 +285,21 @@ namespace JavaVirtualMachine
                 case "S":
                     return "short";
                 default:
-                    throw new ArgumentException();
+                    throw new ArgumentException("Unrecognized primitive name", nameof(name));
             }
+        }
+
+        public static bool IsPrimitiveType(string type)
+        {
+            return  type == "boolean" ||
+                    type == "byte" ||
+                    type == "char" ||
+                    type == "double" ||
+                    type == "float" ||
+                    type == "int" ||
+                    type == "long" ||
+                    type == "short" ||
+                    type == "void";
         }
 
         public static string ClassObjectName(int classObjAddr)

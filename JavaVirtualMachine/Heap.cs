@@ -26,6 +26,11 @@ namespace JavaVirtualMachine
         {
             return (HeapObject)heapItems[index];
         }
+
+        public static HeapArray GetArray(int index)
+        {
+            return (HeapArray)heapItems[index];
+        }
         public static byte GetByte(int address)
         {
             return memory.Slice(address, 1).ToArray()[0];
