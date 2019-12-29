@@ -284,6 +284,8 @@ namespace JavaVirtualMachine
                     return "long";
                 case "S":
                     return "short";
+                case "V":
+                    return "void";
                 default:
                     throw new ArgumentException("Unrecognized primitive name", nameof(name));
             }
@@ -291,7 +293,7 @@ namespace JavaVirtualMachine
 
         public static bool IsPrimitiveType(string type)
         {
-            return  type == "boolean" ||
+            return type == "boolean" ||
                     type == "byte" ||
                     type == "char" ||
                     type == "double" ||
@@ -310,6 +312,47 @@ namespace JavaVirtualMachine
         {
             FieldReferenceValue nameField = (FieldReferenceValue)classObj.GetField("name", "Ljava/lang/String;");
             return ReadJavaString(nameField.Address);
+        }
+        public static string ReadDescriptorArg(string descriptor, ref int i)
+        {
+            int startI = i;
+            while (descriptor[i] == '[')
+            {
+                i++;
+            }
+            if (descriptor[i] == 'L')
+            {
+                for (i++; descriptor[i] != ';'; i++) ;
+            }
+            i++;
+            return descriptor.Substring(startI, i - startI);
+        }
+        public static void CreateMethodTypeObj(string descriptor)
+        {
+            ClassFile methodTypeCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodType");
+            MethodInfo methodTypeMethod = methodTypeCFile.MethodDictionary[("methodType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;")];
+
+            //Read method type
+            List<int> paramsClassObjs = new List<int>();
+            int i;
+            for (i = 1; descriptor[i] != ')';)
+            {
+                string argumentType = JavaHelper.ReadDescriptorArg(descriptor, ref i);
+                int classObj = ClassObjectManager.GetClassObjectAddr(argumentType);
+                paramsClassObjs.Add(classObj);
+            }
+            HeapArray paramsTypesArr = new HeapArray(paramsClassObjs.ToArray(), ClassObjectManager.GetClassObjectAddr("java/lang/Class"));
+            int paramsArrAddr = Heap.AddItem(paramsTypesArr);
+
+            i++;
+            string retType = JavaHelper.ReadDescriptorArg(descriptor, ref i);
+            int retClassObj = ClassObjectManager.GetClassObjectAddr(retType);
+
+            RunJavaFunction(methodTypeMethod, retClassObj, paramsArrAddr);
+        }
+        public static void CreateMethodHandleObj(string descriptor)
+        {
+
         }
     }
 }

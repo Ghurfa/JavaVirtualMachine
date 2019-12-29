@@ -27,7 +27,7 @@ namespace JavaVirtualMachine
                 HeapObject obj = null;
                 if (!MethodInfo.HasFlag(MethodInfoFlag.Static)) obj = Heap.GetObject(Args[0]);
 
-                if(className == "Program" && nameAndDescriptor == ("ToggleDebugWrite", "(Z)V"))
+                if (className == "Program" && nameAndDescriptor == ("ToggleDebugWrite", "(Z)V"))
                 {
                     DebugWriter.WriteDebugMessages = Args[0] != 0;
                     JavaHelper.ReturnVoid();
@@ -245,10 +245,10 @@ namespace JavaVirtualMachine
                     JavaHelper.ReturnVoid();
                     return;
                 }
-                else if(className == "java/io/WinNTFileSystem" && nameAndDescriptor == ("canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;"))
+                else if (className == "java/io/WinNTFileSystem" && nameAndDescriptor == ("canonicalize0", "(Ljava/lang/String;)Ljava/lang/String;"))
                 {
                     string input = JavaHelper.ReadJavaString(Args[1]);
-                    
+
                     string absoluteForm = Path.GetFullPath(input);
                     //not finished
 
@@ -559,7 +559,7 @@ namespace JavaVirtualMachine
                     {
                         if (attribute is InnerClassesAttribute icAttribute)
                         {
-                            foreach(ClassTableEntry entry in icAttribute.Classes)
+                            foreach (ClassTableEntry entry in icAttribute.Classes)
                             {
                                 if (icAttribute.Classes[0].InnerClassName == name)
                                 {
@@ -611,7 +611,7 @@ namespace JavaVirtualMachine
                     JavaHelper.ReturnValue(classObjAddr);
                     return;
                 }
-                else if(className == "java/lang/Class" && nameAndDescriptor == ("getProtectionDomain0", "()Ljava/security/ProtectionDomain;"))
+                else if (className == "java/lang/Class" && nameAndDescriptor == ("getProtectionDomain0", "()Ljava/security/ProtectionDomain;"))
                 {
                     JavaHelper.ReturnValue(0);
                     return;
@@ -739,6 +739,29 @@ namespace JavaVirtualMachine
                     //Float is already represented as int
                     JavaHelper.ReturnValue(Args[0]);
                     return;
+                }
+                else if (className == "java/lang/invoke/MethodHandleNatives" && nameAndDescriptor == ("getConstant", "(I)I"))
+                {
+                    if(Args[0] == 0) //MethodHandlePushLimit
+                    {
+                        JavaHelper.ReturnValue(0);
+                        return;
+                    }
+                    else //1 = stack slot push size
+                    {
+                        JavaHelper.ReturnValue(0);
+                        return;
+                    }
+                }
+                else if (className == "java/lang/invoke/MethodHandleNatives" && nameAndDescriptor == ("registerNatives", "()V"))
+                {
+                    JavaHelper.ReturnVoid();
+                    return;
+                }
+                else if(className == "java/lang/invoke/MethodHandleNatives" && nameAndDescriptor == ("resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/MemberName;"))
+                {
+                    HeapObject self = Heap.GetObject(Args[0]);
+                    HeapObject caller = Heap.GetObject(Args[1]);
                 }
                 else if (className == "java/lang/Object" && nameAndDescriptor == ("<init>", "()V"))
                 {
@@ -1015,16 +1038,16 @@ namespace JavaVirtualMachine
                     return;
 
                 }
-                else if(className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("connect0", "(ILjava/net/InetAddress;I)I"))
+                else if (className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("connect0", "(ILjava/net/InetAddress;I)I"))
                 {
 
                 }
-                else if(className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("initIDs", "()V"))
+                else if (className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("initIDs", "()V"))
                 {
                     JavaHelper.ReturnVoid();
                     return;
                 }
-                else if(className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("socket0", "(ZZ)I"))
+                else if (className == "java/net/DualStackPlainSocketImpl" && nameAndDescriptor == ("socket0", "(ZZ)I"))
                 {
                     bool stream = Args[0] != 0;
                     bool v6Only = Args[1] != 0;
@@ -1033,23 +1056,23 @@ namespace JavaVirtualMachine
                     JavaHelper.ReturnValue(0);
                     return;
                 }
-                else if(className == "java/net/Inet4Address" && nameAndDescriptor == ("init", "()V"))
+                else if (className == "java/net/Inet4Address" && nameAndDescriptor == ("init", "()V"))
                 {
                     JavaHelper.ReturnVoid();
                     return;
                 }
-                else if(className == "java/net/Inet6Address" && nameAndDescriptor == ("init", "()V"))
+                else if (className == "java/net/Inet6Address" && nameAndDescriptor == ("init", "()V"))
                 {
                     JavaHelper.ReturnVoid();
                     return;
                 }
-                else if(className == "java/net/Inet6AddressImpl" && nameAndDescriptor == ("getLocalHostName", "()Ljava/lang/String;"))
+                else if (className == "java/net/Inet6AddressImpl" && nameAndDescriptor == ("getLocalHostName", "()Ljava/lang/String;"))
                 {
                     string name = Dns.GetHostName();
                     JavaHelper.ReturnValue(JavaHelper.CreateJavaStringLiteral(name));
                     return;
                 }
-                else if(className == "java/net/Inet6AddressImpl" && nameAndDescriptor == ("lookupAllHostAddr", "(Ljava/lang/String;)[Ljava/net/InetAddress;"))
+                else if (className == "java/net/Inet6AddressImpl" && nameAndDescriptor == ("lookupAllHostAddr", "(Ljava/lang/String;)[Ljava/net/InetAddress;"))
                 {
                     string hostName = JavaHelper.ReadJavaString(Args[1]);
                     IPAddress[] addresses = Dns.GetHostAddresses(hostName);
@@ -1083,7 +1106,7 @@ namespace JavaVirtualMachine
                     bool supportsIPv6 = false;
                     foreach (NetworkInterface adaptor in networkInterfaces)
                     {
-                        if(adaptor.Supports(NetworkInterfaceComponent.IPv6))
+                        if (adaptor.Supports(NetworkInterfaceComponent.IPv6))
                         {
                             supportsIPv6 = true;
                             break;

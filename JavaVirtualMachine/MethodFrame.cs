@@ -1649,43 +1649,74 @@ namespace JavaVirtualMachine
                                 ClassFile cFile = ClassFileManager.GetClassFile(bootstrapMethodRef.ClassName);
 
                                 int[] arguments = new int[bootstrapMethodRef.NumOfArgs()];
-                                //arguments[0] = 
-                                //arguments[1] =  
-                                arguments[2] = JavaHelper.CreateJavaStringLiteral(symbolicRef.Name);
-                                //arguments[3] = 
-                                for(int i = 4; i < arguments.Length; i++)
+
+                                ClassFile methodHandlesCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandles");
+                                MethodInfo getLookupMethod = methodHandlesCFile.MethodDictionary[("lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;")];
+                                JavaHelper.RunJavaFunction(getLookupMethod);
+                                int lookupObj = Utility.PopInt(Stack, ref sp);
+                                arguments[1] = lookupObj;
+
+                                arguments[2] = JavaHelper.CreateJavaStringLiteral(symbolicRef.Name); //Name of func to link
+
+                                JavaHelper.CreateMethodTypeObj(symbolicRef.Descriptor);
+                                int methodTypeObj = Utility.PopInt(Stack, ref sp);
+                                arguments[3] = methodTypeObj;
+
+                                ClassFile methodHandlesLookupCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandles$Lookup");
+                                MethodInfo getMethodHandleMethod;
+                                switch (symbolicRef.BootstrapMethod.MethodHandle.Kind)
                                 {
-                                    CPInfo constant = symbolicRef.BootstrapMethod.Arguments[i - 4];
+                                    case MethodHandleRefKind.invokeStatic:
+                                        getMethodHandleMethod = methodHandlesLookupCFile.MethodDictionary[("findStatic", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;")];
+                                        break;
+                                    default:
+                                        throw new NotImplementedException();
+                                }
+                                JavaHelper.RunJavaFunction(getMethodHandleMethod, 
+                                    lookupObj, 
+                                    ClassObjectManager.GetClassObjectAddr(bootstrapMethodRef.ClassName), 
+                                    JavaHelper.CreateJavaStringLiteral(bootstrapMethodRef.Name),
+                                    methodTypeObj
+                                    );
+                                int methodHandleObj = Utility.PopInt(Stack, ref sp);
+                                arguments[0] = methodHandleObj;
+
+                                for (int j = 4; j < arguments.Length; j++)
+                                {
+                                    CPInfo constant = symbolicRef.BootstrapMethod.Arguments[j - 4];
                                     switch (constant)
                                     {
                                         case CClassInfo classInfo:
-                                            arguments[i] = ClassObjectManager.GetClassObjectAddr(classInfo);
+                                            arguments[j] = ClassObjectManager.GetClassObjectAddr(classInfo);
                                             throw new NotImplementedException();
                                         case CMethodHandleInfo methodHandle:
+                                            throw new NotImplementedException();
                                             break;
                                         case CMethodTypeInfo methodType:
+                                            JavaHelper.CreateMethodTypeObj(methodType.Descriptor.String);
+                                            arguments[j] = Utility.PopInt(Stack, ref sp);
                                             break;
                                         case CStringInfo stringVal:
-                                            arguments[i] = JavaHelper.CreateJavaStringLiteral(stringVal.String);
+                                            arguments[j] = JavaHelper.CreateJavaStringLiteral(stringVal.String);
                                             break;
                                         case CIntegerInfo intVal:
-                                            arguments[i] = intVal.IntValue;
+                                            arguments[j] = intVal.IntValue;
                                             break;
                                         case CLongInfo longVal:
                                             {
                                                 (int low, int high) = longVal.LongValue.Split();
-                                                arguments[i] = low;
-                                                arguments[++i] = high;
+                                                arguments[j] = low;
+                                                arguments[++j] = high;
                                             }
                                             break;
                                         case CFloatInfo floatVal:
-                                            arguments[i] = (int)floatVal.IntValue;
+                                            arguments[j] = (int)floatVal.IntValue;
                                             break;
                                         case CDoubleInfo doubleVal:
                                             {
                                                 (int low, int high) = doubleVal.LongValue.Split();
-                                                arguments[i] = low;
-                                                arguments[++i] = high;
+                                                arguments[j] = low;
+                                                arguments[++j] = high;
                                             }
                                             break;
                                         default:

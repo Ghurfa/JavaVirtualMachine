@@ -34,6 +34,10 @@ namespace JavaVirtualMachine
         const ConsoleColor shortColor = ConsoleColor.DarkYellow;
         const ConsoleColor longColor = ConsoleColor.DarkMagenta;
         const ConsoleColor doubleColor = ConsoleColor.DarkRed;
+
+        //Fields
+        const ConsoleColor fieldNameColor = ConsoleColor.Yellow;
+        const ConsoleColor fieldTypeColor = ConsoleColor.Cyan;
         public static void WriteDebugMessage(string message)
         {
             Console.ForegroundColor = DebugDefaultColor;
@@ -152,7 +156,7 @@ namespace JavaVirtualMachine
                     {
                         Console.Write(", ");
                     }
-                    string argumentType = ReadDescriptorArg(descriptor, ref i);
+                    string argumentType = JavaHelper.ReadDescriptorArg(descriptor, ref i);
                     if (argumentType[0] == 'J' || argumentType[0] == 'D')
                     {
                         long argument = (args[argIndex], args[argIndex + 1]).ToLong();
@@ -170,20 +174,6 @@ namespace JavaVirtualMachine
                 Console.Write(')');
             }
         }
-        private static string ReadDescriptorArg(string descriptor, ref int i)
-        {
-            int startI = i;
-            while(descriptor[i] == '[')
-            {
-                i++;
-            }
-            if(descriptor[i] == 'L')
-            {
-                for (i++; descriptor[i] != ';'; i++) ;
-            }
-            i++;
-            return descriptor.Substring(startI, i - startI);
-        }
         private static void WriteWideValue(char character, long argument)
         {
             if (character == 'J')
@@ -199,11 +189,11 @@ namespace JavaVirtualMachine
         }
         private static void WriteArrayValue(string itemType, int argument)
         {
-            if(argument != 0)
+            if (argument != 0)
             {
                 HeapArray heapArr = Heap.GetArray(argument);
                 string itemTypeFromArg = JavaHelper.ClassObjectName(heapArr.ItemTypeClassObjAddr);
-                if(!JavaHelper.IsPrimitiveType(itemTypeFromArg))
+                if (!JavaHelper.IsPrimitiveType(itemTypeFromArg))
                 {
                     itemType = JavaHelper.ClassObjectName(heapArr.ItemTypeClassObjAddr).Replace('.', '/');
                 }
@@ -217,7 +207,7 @@ namespace JavaVirtualMachine
             } while (itemType[i] == '[');
 
             Console.ForegroundColor = classNameColor;
-            if(itemType[i] == 'L')
+            if (itemType[i] == 'L')
             {
                 Console.Write(itemType.Substring(i + 1, itemType.Length - i - 2));
             }
@@ -237,48 +227,6 @@ namespace JavaVirtualMachine
             else
             {
                 Console.ForegroundColor = objAddrColor;
-                Console.Write(argument);
-            }
-        }
-        private static void WriteValue(string argumentType, int argument)
-        {
-            if (argumentType[0] == 'L')
-            {
-                WriteObjectValue(argumentType.Substring(1, argumentType.Length - 2), argument);
-            }
-            else if (argumentType[0] == '[')
-            {
-                WriteArrayValue(argumentType.Substring(1), argument);
-            }
-            else if (argumentType[0] == 'Z')
-            {
-                Console.ForegroundColor = booleanColor;
-                Console.Write(argument != 0 ? "True" : "False");
-            }
-            else if (argumentType[0] == 'C')
-            {
-                Console.ForegroundColor = charColor;
-                Console.Write("'" + (char)argument + "'");
-            }
-            else if (argumentType[0] == 'F')
-            {
-                Console.ForegroundColor = floatColor;
-                Console.Write(JavaHelper.StoredFloatToFloat(argument));
-            }
-            else
-            {
-                switch (argumentType[0])
-                {
-                    case 'B':
-                        Console.ForegroundColor = byteColor;
-                        break;
-                    case 'I':
-                        Console.ForegroundColor = integerColor;
-                        break;
-                    case 'S':
-                        Console.ForegroundColor = shortColor;
-                        break;
-                }
                 Console.Write(argument);
             }
         }
@@ -329,6 +277,102 @@ namespace JavaVirtualMachine
                 Console.Write(argument);
             }
         }
+        private static void WriteValue(string argumentType, int argument)
+        {
+            if (argumentType[0] == 'L')
+            {
+                WriteObjectValue(argumentType.Substring(1, argumentType.Length - 2), argument);
+            }
+            else if (argumentType[0] == '[')
+            {
+                WriteArrayValue(argumentType.Substring(1), argument);
+            }
+            else if (argumentType[0] == 'Z')
+            {
+                Console.ForegroundColor = booleanColor;
+                Console.Write(argument != 0 ? "True" : "False");
+            }
+            else if (argumentType[0] == 'C')
+            {
+                Console.ForegroundColor = charColor;
+                Console.Write("'" + (char)argument + "'");
+            }
+            else if (argumentType[0] == 'F')
+            {
+                Console.ForegroundColor = floatColor;
+                Console.Write(JavaHelper.StoredFloatToFloat(argument));
+            }
+            else
+            {
+                switch (argumentType[0])
+                {
+                    case 'B':
+                        Console.ForegroundColor = byteColor;
+                        break;
+                    case 'I':
+                        Console.ForegroundColor = integerColor;
+                        break;
+                    case 'S':
+                        Console.ForegroundColor = shortColor;
+                        break;
+                }
+                Console.Write(argument);
+            }
+        }
+        private static void WriteFieldValue(FieldInfo fieldInfo, FieldValue fieldValue)
+        {
+            Console.ForegroundColor = fieldTypeColor;
+            Console.Write(fieldInfo.Descriptor);
+            Console.ForegroundColor = separatorColor;
+            Console.Write(':');
+            switch (fieldValue)
+            {
+                case FieldNumber number:
+                    switch (fieldInfo.Descriptor)
+                    {
+                        case "Z":
+                            Console.ForegroundColor = booleanColor;
+                            Console.Write(number.Value != 0 ? "True" : "False");
+                            break;
+                        case "C":
+                            Console.ForegroundColor = charColor;
+                            Console.Write("'" + (char)number.Value + "'");
+                            break;
+                        case "F":
+                            Console.ForegroundColor = floatColor;
+                            Console.Write(JavaHelper.StoredFloatToFloat(number.Value));
+                            break;
+                        case "B":
+                            Console.ForegroundColor = byteColor;
+                            Console.Write(number.Value);
+                            break;
+                        case "I":
+                            Console.ForegroundColor = integerColor;
+                            Console.Write(number.Value);
+                            break;
+                        case "S":
+                            Console.ForegroundColor = shortColor;
+                            Console.Write(number.Value);
+                            break;
+                    }
+                    break;
+                case FieldLargeNumber largeNumber:
+                    WriteWideValue(fieldInfo.Descriptor[0], largeNumber.Value);
+                    break;
+                case FieldReferenceValue referenceValue:
+                    if (fieldInfo.Descriptor[0] == '[')
+                    {
+                        WriteArrayValue(fieldInfo.Descriptor.Substring(1), referenceValue.Address);
+                    }
+                    else
+                    {
+                        WriteObjectValue(fieldInfo.Descriptor.Substring(1, fieldInfo.Descriptor.Length - 2), referenceValue.Address);
+                    }
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
         public static void PrintStack()
         {
             MethodFrame[] stack = new MethodFrame[Program.MethodFrameStack.Count];
@@ -344,6 +388,29 @@ namespace JavaVirtualMachine
                 Console.CursorLeft = (stack.Length - 1 - i) * Spacing;
                 MethodFrame frame = stack[i];
                 Console.WriteLine($"{frame.ClassFile.Name}.{frame.MethodInfo.Name}{frame.MethodInfo.Descriptor}");
+            }
+        }
+        public static void PrintObject(int objAddr) => PrintObject(Heap.GetObject(objAddr));
+        public static void PrintObject(HeapObject obj)
+        {
+            Console.WriteLine();
+
+            string className = obj.ClassFile.Name;
+            Console.ForegroundColor = classNameColor;
+            Console.Write(className);
+            Console.ForegroundColor = separatorColor;
+            Console.Write('/');
+            Console.ForegroundColor = objAddrColor;
+            Console.WriteLine(obj.Address);
+
+            foreach (FieldInfo field in obj.ClassFile.InstanceFields())
+            {
+                Console.ForegroundColor = fieldNameColor;
+                Console.Write(field.Name);
+                Console.ForegroundColor = separatorColor;
+                Console.Write('/');
+                WriteFieldValue(field, obj.GetField(field.Name, field.Descriptor));
+                Console.WriteLine();
             }
         }
     }
