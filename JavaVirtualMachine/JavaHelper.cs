@@ -327,6 +327,44 @@ namespace JavaVirtualMachine
             i++;
             return descriptor.Substring(startI, i - startI);
         }
+        public static MethodInfo ResolveMethod(string className, string methodName, string methodDescriptor)
+        {
+            ClassFile cFile = ClassFileManager.GetClassFile(className);
+            return cFile.MethodDictionary[(methodName, methodDescriptor)];
+        }
+        public static string MakeDescriptor(HeapObject returnType, HeapArray parameterTypes)
+        {
+            int[] paramTypesArr = (int[])parameterTypes.Array;
+
+            string descriptor = "(";
+            for (int i = 0; i < paramTypesArr.Length; i++)
+            {
+                throw new NotImplementedException();
+                string typeName = JavaHelper.ClassObjectName(paramTypesArr[i]);
+            }
+
+            string returnTypeName = ClassObjectName(returnType);
+
+            if (IsPrimitiveType(returnTypeName))
+            {
+                throw new NotImplementedException();
+            }
+
+            int j;
+            for (j = 0; returnTypeName[j] == '['; j++) ; //Skip through array brackets
+            if (j != returnTypeName.Length) //Object
+            {
+                //Format as descriptor style
+                returnTypeName = returnTypeName.Substring(0, j) + ")L" + returnTypeName.Substring(j, returnTypeName.Length - j).Replace(".", "/") + ";";
+            }
+            else
+            {
+                descriptor += ")";
+            }
+            descriptor += returnTypeName;
+
+            return descriptor;
+        }
         public static void CreateMethodTypeObj(string descriptor)
         {
             ClassFile methodTypeCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodType");
@@ -337,7 +375,7 @@ namespace JavaVirtualMachine
             int i;
             for (i = 1; descriptor[i] != ')';)
             {
-                string argumentType = JavaHelper.ReadDescriptorArg(descriptor, ref i);
+                string argumentType = ReadDescriptorArg(descriptor, ref i);
                 int classObj = ClassObjectManager.GetClassObjectAddr(argumentType);
                 paramsClassObjs.Add(classObj);
             }
@@ -345,14 +383,100 @@ namespace JavaVirtualMachine
             int paramsArrAddr = Heap.AddItem(paramsTypesArr);
 
             i++;
-            string retType = JavaHelper.ReadDescriptorArg(descriptor, ref i);
+            string retType = ReadDescriptorArg(descriptor, ref i);
             int retClassObj = ClassObjectManager.GetClassObjectAddr(retType);
 
             RunJavaFunction(methodTypeMethod, retClassObj, paramsArrAddr);
         }
-        public static void CreateMethodHandleObj(string descriptor)
+        public static int ResolveMethodHandle(CMethodHandleInfo methodHandle)
         {
+            ClassFile cFile = ClassFileManager.GetClassFile(((CMethodRefInfo)methodHandle.Reference).ClassName);
 
+            var methodRef = (CMethodRefInfo)methodHandle.Reference;
+            MethodInfo methodInfo = cFile.MethodDictionary[(methodRef.Name, methodRef.Descriptor)];
+
+            CreateMethodTypeObj(((CMethodRefInfo)methodHandle.Reference).Descriptor);
+            MethodFrame frame = Program.MethodFrameStack.Peek();
+            int bootstrapMethodType = Utility.PopInt(frame.Stack, ref frame.sp);
+
+            ClassFile methodHandleCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandle");
+            HeapObject methodHandleObj = new HeapObject(methodHandleCFile);
+            int methodHandleObjAddr = Heap.AddItem(methodHandleObj);
+
+            methodHandleObj.SetField("type", "Ljava/lang/invoke/MethodType;", new FieldReferenceValue(bootstrapMethodType));
+
+            if(methodInfo.HasFlag(MethodInfoFlag.VarArgs))
+            {
+                throw new NotImplementedException();
+            }
+
+            return methodHandleObjAddr;
+
+        }
+        public static (int methodHandle, int methodType, int[] staticArgs) ResolveCallSiteSpecifier(CInvokeDynamicInfo callSiteSpecifier)
+        {
+            CMethodHandleInfo bootstrapMethodHandle = callSiteSpecifier.BootstrapMethod.MethodHandle;
+            int bootstrapMethodHandleObj = ResolveMethodHandle(bootstrapMethodHandle);
+
+            CreateMethodTypeObj(((CMethodRefInfo)bootstrapMethodHandle.Reference).Descriptor);
+            MethodFrame frame = Program.MethodFrameStack.Peek();
+            int bootstrapMethodType = Utility.PopInt(frame.Stack, ref frame.sp);
+
+            CPInfo[] staticArgsConstants = callSiteSpecifier.BootstrapMethod.Arguments;
+
+            int numOfLargeArgs = 0;
+            foreach(CPInfo constant in staticArgsConstants)
+            {
+                if(constant is CLongInfo || constant is CDoubleInfo)
+                {
+                    numOfLargeArgs++;
+                }
+            }
+
+            int[] staticArgs = new int[staticArgsConstants.Length + numOfLargeArgs];
+            for(int i = 0; i < staticArgsConstants.Length; i++)
+            {
+                CPInfo constant = callSiteSpecifier.BootstrapMethod.Arguments[i];
+                switch (constant)
+                {
+                    case CClassInfo classInfo:
+                        staticArgs[i] = ClassObjectManager.GetClassObjectAddr(classInfo);
+                        throw new NotImplementedException();
+                    case CMethodHandleInfo methodHandle:
+                        staticArgs[i] = ResolveMethodHandle(methodHandle);
+                        break;
+                    case CMethodTypeInfo methodType:
+                        CreateMethodTypeObj(methodType.Descriptor.String);
+                        staticArgs[i] = Utility.PopInt(frame.Stack, ref frame.sp);
+                        break;
+                    case CStringInfo stringVal:
+                        staticArgs[i] = CreateJavaStringLiteral(stringVal.String);
+                        break;
+                    case CIntegerInfo intVal:
+                        staticArgs[i] = intVal.IntValue;
+                        break;
+                    case CLongInfo longVal:
+                        {
+                            (int low, int high) = longVal.LongValue.Split();
+                            staticArgs[i] = low;
+                            staticArgs[++i] = high;
+                        }
+                        break;
+                    case CFloatInfo floatVal:
+                        staticArgs[i] = (int)floatVal.IntValue;
+                        break;
+                    case CDoubleInfo doubleVal:
+                        {
+                            (int low, int high) = doubleVal.LongValue.Split();
+                            staticArgs[i] = low;
+                            staticArgs[++i] = high;
+                        }
+                        break;
+                    default:
+                        throw new InvalidOperationException();
+                }
+            }
+            return (bootstrapMethodHandleObj, bootstrapMethodType, staticArgs);
         }
     }
 }

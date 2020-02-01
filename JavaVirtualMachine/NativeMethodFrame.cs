@@ -760,8 +760,32 @@ namespace JavaVirtualMachine
                 }
                 else if(className == "java/lang/invoke/MethodHandleNatives" && nameAndDescriptor == ("resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/MemberName;"))
                 {
+                    throw new NotImplementedException();
                     HeapObject self = Heap.GetObject(Args[0]);
                     HeapObject caller = Heap.GetObject(Args[1]);
+
+                    FieldReferenceValue classField = (FieldReferenceValue)self.GetField(0);
+                    string methodClass = JavaHelper.ClassObjectName(classField.Address);
+                    FieldReferenceValue nameField = (FieldReferenceValue)self.GetField(1);
+                    string name = JavaHelper.ReadJavaString(nameField);
+
+                    HeapObject methodType = Heap.GetObject(((FieldReferenceValue)self.GetField("type", "Ljava/lang/Object;")).Address);
+                    HeapObject returnType = Heap.GetObject(((FieldReferenceValue)methodType.GetField("rtype", "Ljava/lang/Class;")).Address);
+                    HeapArray parameterTypes = Heap.GetArray(((FieldReferenceValue)methodType.GetField("ptypes", "[Ljava/lang/Class;")).Address);
+
+                    string descriptor = JavaHelper.MakeDescriptor(returnType, parameterTypes);
+
+                    MethodInfo method = ClassFileManager.GetClassFile(methodClass).MethodDictionary[(name, descriptor)];
+
+                    int flags = ((FieldNumber)self.GetField("flags", "I")).Value;
+                    if(method.HasFlag(MethodInfoFlag.Static))
+                    {
+
+                    }
+
+
+                    JavaHelper.ReturnValue(Args[0]);
+                    return;
                 }
                 else if (className == "java/lang/Object" && nameAndDescriptor == ("<init>", "()V"))
                 {

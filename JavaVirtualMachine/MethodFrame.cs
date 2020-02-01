@@ -278,7 +278,7 @@ namespace JavaVirtualMachine
                     int oldIp = ip;
                     byte opCode = code[ip++];
                     bool wide = opCode == (int)OpCodes.wide;
-                    if(wide)
+                    if (wide)
                     {
                         opCode = code[ip++];
                     }
@@ -394,7 +394,7 @@ namespace JavaVirtualMachine
                         case OpCodes.iload:
                         case OpCodes.fload:
                         case OpCodes.aload:
-                            if(wide)
+                            if (wide)
                             {
                                 Utility.Push(ref Stack, ref sp, Locals[readShort(code, ref ip)]);
                             }
@@ -1640,114 +1640,30 @@ namespace JavaVirtualMachine
                                 //https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
                                 //https://docs.oracle.com/javase/8/docs/technotes/guides/vm/multiple-language-support.html
                                 short index = readShort(code, ref ip);
-                                CInvokeDynamicInfo symbolicRef = (CInvokeDynamicInfo)ClassFile.Constants[index];
+                                CInvokeDynamicInfo callSiteSpecifier = (CInvokeDynamicInfo)ClassFile.Constants[index];
 
                                 ip += 2; //Third and fourth bytes are zero
 
-                                CMethodRefInfo bootstrapMethodRef = (CMethodRefInfo)symbolicRef.BootstrapMethod.MethodHandle.Reference;
-                                
-                                ClassFile cFile = ClassFileManager.GetClassFile(bootstrapMethodRef.ClassName);
-
-                                int[] arguments = new int[bootstrapMethodRef.NumOfArgs()];
+                                var resolution = JavaHelper.ResolveCallSiteSpecifier(callSiteSpecifier);
 
                                 ClassFile methodHandlesCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandles");
                                 MethodInfo getLookupMethod = methodHandlesCFile.MethodDictionary[("lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;")];
                                 JavaHelper.RunJavaFunction(getLookupMethod);
                                 int lookupObj = Utility.PopInt(Stack, ref sp);
+
+                                string methodDescriptor = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;"
+                                                            + callSiteSpecifier.BootstrapMethod.GetArgumentsDescriptor()
+                                                            + ")Ljava/lang/invoke/CallSite;";
+                                MethodInfo bootstrapMethod = JavaHelper.ResolveMethod("java/lang/invoke/MethodHandle", "invoke", methodDescriptor);
+
+                                int[] arguments = new int[bootstrapMethod.NumOfArgs() + 1];
+                                arguments[0] = resolution.methodHandle;
                                 arguments[1] = lookupObj;
+                                arguments[2] = JavaHelper.CreateJavaStringLiteral(callSiteSpecifier.Name);
+                                arguments[3] = resolution.methodType;
+                                resolution.staticArgs.CopyTo(arguments, 4);
 
-                                arguments[2] = JavaHelper.CreateJavaStringLiteral(symbolicRef.Name); //Name of func to link
-
-                                JavaHelper.CreateMethodTypeObj(symbolicRef.Descriptor);
-                                int methodTypeObj = Utility.PopInt(Stack, ref sp);
-                                arguments[3] = methodTypeObj;
-
-                                ClassFile methodHandlesLookupCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandles$Lookup");
-                                MethodInfo getMethodHandleMethod;
-                                switch (symbolicRef.BootstrapMethod.MethodHandle.Kind)
-                                {
-                                    case MethodHandleRefKind.invokeStatic:
-                                        getMethodHandleMethod = methodHandlesLookupCFile.MethodDictionary[("findStatic", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;")];
-                                        break;
-                                    default:
-                                        throw new NotImplementedException();
-                                }
-                                JavaHelper.RunJavaFunction(getMethodHandleMethod, 
-                                    lookupObj, 
-                                    ClassObjectManager.GetClassObjectAddr(bootstrapMethodRef.ClassName), 
-                                    JavaHelper.CreateJavaStringLiteral(bootstrapMethodRef.Name),
-                                    methodTypeObj
-                                    );
-                                int methodHandleObj = Utility.PopInt(Stack, ref sp);
-                                arguments[0] = methodHandleObj;
-
-                                for (int j = 4; j < arguments.Length; j++)
-                                {
-                                    CPInfo constant = symbolicRef.BootstrapMethod.Arguments[j - 4];
-                                    switch (constant)
-                                    {
-                                        case CClassInfo classInfo:
-                                            arguments[j] = ClassObjectManager.GetClassObjectAddr(classInfo);
-                                            throw new NotImplementedException();
-                                        case CMethodHandleInfo methodHandle:
-                                            throw new NotImplementedException();
-                                            break;
-                                        case CMethodTypeInfo methodType:
-                                            JavaHelper.CreateMethodTypeObj(methodType.Descriptor.String);
-                                            arguments[j] = Utility.PopInt(Stack, ref sp);
-                                            break;
-                                        case CStringInfo stringVal:
-                                            arguments[j] = JavaHelper.CreateJavaStringLiteral(stringVal.String);
-                                            break;
-                                        case CIntegerInfo intVal:
-                                            arguments[j] = intVal.IntValue;
-                                            break;
-                                        case CLongInfo longVal:
-                                            {
-                                                (int low, int high) = longVal.LongValue.Split();
-                                                arguments[j] = low;
-                                                arguments[++j] = high;
-                                            }
-                                            break;
-                                        case CFloatInfo floatVal:
-                                            arguments[j] = (int)floatVal.IntValue;
-                                            break;
-                                        case CDoubleInfo doubleVal:
-                                            {
-                                                (int low, int high) = doubleVal.LongValue.Split();
-                                                arguments[j] = low;
-                                                arguments[++j] = high;
-                                            }
-                                            break;
-                                        default:
-                                            throw new InvalidOperationException();
-                                    }
-                                }
-
-
-                                //Search for method in cFile's staticMethodDictionary. If it's not there, repeat search in cFile's super and so on
-                                MethodInfo method;
-                                while (!cFile.MethodDictionary.TryGetValue((bootstrapMethodRef.Name, bootstrapMethodRef.Descriptor), out method))
-                                {
-                                    cFile = cFile.SuperClass;
-                                }
-
-                                if (method.HasFlag(MethodInfoFlag.Native))
-                                {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments);
-                                    NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
-                                    {
-                                        Args = arguments
-                                    };
-                                    nativeMethodFrame.Execute();
-                                }
-                                else
-                                {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments);
-                                    MethodFrame methodFrame = new MethodFrame(method);
-                                    arguments.CopyTo(methodFrame.Locals, 0);
-                                    methodFrame.Execute();
-                                }
+                                JavaHelper.RunJavaFunction(bootstrapMethod, arguments);
                             }
                             break;
                         case OpCodes.@new:

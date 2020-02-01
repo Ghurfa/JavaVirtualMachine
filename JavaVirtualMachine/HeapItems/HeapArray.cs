@@ -4,7 +4,7 @@ using System.Text;
 
 namespace JavaVirtualMachine
 {
-    class HeapArray : HeapObject
+    public class HeapArray : HeapObject
     {
         public Array Array;
         public int ItemTypeClassObjAddr;

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JavaVirtualMachine.ConstantPoolInfo
 {
-    class CInvokeDynamicInfo : CPInfo
+    public class CInvokeDynamicInfo : CPInfo
     {
         private readonly ushort BootstrapMethodAttrIndex;
         private readonly ushort NameAndTypeIndex;
