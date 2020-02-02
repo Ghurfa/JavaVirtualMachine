@@ -1488,58 +1488,115 @@ namespace JavaVirtualMachine
                             break;
                         case OpCodes.invokevirtual:
                         case OpCodes.invokespecial:
+                        case OpCodes.invokedynamic:
                             {
-                                //Get method ref
-                                short index = readShort(code, ref ip);
-                                CMethodRefInfo methodRef = (CMethodRefInfo)ClassFile.Constants[index];
-
-                                //Get args
-                                int[] arguments = new int[methodRef.NumOfArgs() + 1];
-                                for (int i = arguments.Length - 1; i >= 0; i--)
-                                {
-                                    arguments[i] = Utility.PopInt(Stack, ref sp);
-                                }
-
-                                if (arguments[0] == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-
-                                ClassFile cFile;
-                                if ((OpCodes)opCode == OpCodes.invokevirtual)
-                                {
-                                    string objectRefClassFileName = Heap.GetObject(arguments[0]).ClassFile.Name;
-                                    cFile = ClassFileManager.GetClassFile(objectRefClassFileName);
-                                }
-                                else
-                                {
-                                    CClassInfo cFileInfo = (CClassInfo)ClassFile.Constants[methodRef.ClassIndex];
-                                    cFile = ClassFileManager.GetClassFile(cFileInfo.Name);
-                                }
-
-                                //Search for method in cFile's staticMethodDictionary. If it's not there, repeat search in cFile's super and so on
                                 MethodInfo method;
-                                while (!cFile.MethodDictionary.TryGetValue((methodRef.Name, methodRef.Descriptor), out method))
+                                int[] arguments;
+                                if ((OpCodes)opCode == OpCodes.invokedynamic)
                                 {
-                                    cFile = cFile.SuperClass;
-                                }
+                                    //https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
+                                    //https://docs.oracle.com/javase/8/docs/technotes/guides/vm/multiple-language-support.html
+                                    short index = readShort(code, ref ip);
+                                    CInvokeDynamicInfo callSiteSpecifier = (CInvokeDynamicInfo)ClassFile.Constants[index];
 
-                                if (method.HasFlag(MethodInfoFlag.Native))
-                                {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments);
-                                    NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
-                                    {
-                                        Args = arguments
-                                    };
-                                    nativeMethodFrame.Execute();
+                                    ip += 2; //Third and fourth bytes are zero
+
+                                    var resolution = JavaHelper.ResolveCallSiteSpecifier(callSiteSpecifier);
+
+                                    ClassFile methodHandlesCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandles");
+                                    MethodInfo getLookupMethod = methodHandlesCFile.MethodDictionary[("lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;")];
+                                    JavaHelper.RunJavaFunction(getLookupMethod);
+                                    int lookupObj = Utility.PopInt(Stack, ref sp);
+
+                                    string methodDescriptor = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;"
+                                                                + callSiteSpecifier.BootstrapMethod.GetArgumentsDescriptor()
+                                                                + ")Ljava/lang/invoke/CallSite;";
+                                    method = JavaHelper.ResolveMethod("java/lang/invoke/MethodHandle", "invoke", methodDescriptor);
+
+                                    arguments = new int[4 + resolution.staticArgs.Length];
+                                    arguments[0] = resolution.methodHandle;
+                                    arguments[1] = lookupObj;
+                                    arguments[2] = JavaHelper.CreateJavaStringLiteral(callSiteSpecifier.Name);
+                                    arguments[3] = resolution.methodType;
+                                    resolution.staticArgs.CopyTo(arguments, 4);
                                 }
                                 else
                                 {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments);
-                                    MethodFrame methodFrame = new MethodFrame(method);
-                                    arguments.CopyTo(methodFrame.Locals, 0);
-                                    methodFrame.Execute();
+                                    //Get method ref
+                                    short index = readShort(code, ref ip);
+                                    CMethodRefInfo methodRef = (CMethodRefInfo)ClassFile.Constants[index];
+
+                                    //Get args
+                                    arguments = new int[methodRef.NumOfArgs() + 1];
+                                    for (int i = arguments.Length - 1; i >= 0; i--)
+                                    {
+                                        arguments[i] = Utility.PopInt(Stack, ref sp);
+                                    }
+
+                                    if (arguments[0] == 0)
+                                    {
+                                        JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                    }
+
+                                    ClassFile cFile;
+                                    if ((OpCodes)opCode == OpCodes.invokevirtual)
+                                    {
+                                        string objectRefClassFileName = Heap.GetObject(arguments[0]).ClassFile.Name;
+                                        cFile = ClassFileManager.GetClassFile(objectRefClassFileName);
+                                    }
+                                    else
+                                    {
+                                        CClassInfo cFileInfo = (CClassInfo)ClassFile.Constants[methodRef.ClassIndex];
+                                        cFile = ClassFileManager.GetClassFile(cFileInfo.Name);
+                                    }
+                                    method = JavaHelper.ResolveMethod(cFile.Name, methodRef.Name, methodRef.Descriptor);
                                 }
+
+                                if (method.IsSignaturePolymorphic())
+                                {
+                                    JavaHelper.CreateMethodTypeObj(method.Descriptor);
+                                    int methodTypeObjAddr = Utility.PopInt(Stack, ref sp);
+                                    if(method.Name == "invokeExact")
+                                    {
+                                        HeapObject methodHandle = Heap.GetObject(arguments[0]);
+                                    }
+                                    else if(method.Name == "invoke")
+                                    {
+                                        HeapObject methodHandle = Heap.GetObject(arguments[0]);
+                                        FieldReferenceValue methodType = (FieldReferenceValue)methodHandle.GetField("type", "Ljava/lang/invoke/MethodType;");
+
+                                        bool equals = true; //semantically equal
+                                        if(equals)
+                                        {
+
+                                        }
+                                        else
+                                        {
+                                            throw new NotImplementedException();
+                                        }
+                                    }
+
+                                }
+                                else
+                                {
+                                    if (method.HasFlag(MethodInfoFlag.Native))
+                                    {
+                                        DebugWriter.CallFuncDebugWrite(method, arguments);
+                                        NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
+                                        {
+                                            Args = arguments
+                                        };
+                                        nativeMethodFrame.Execute();
+                                    }
+                                    else
+                                    {
+                                        DebugWriter.CallFuncDebugWrite(method, arguments);
+                                        MethodFrame methodFrame = new MethodFrame(method);
+                                        arguments.CopyTo(methodFrame.Locals, 0);
+                                        methodFrame.Execute();
+                                    }
+                                }
+
                             }
                             break;
                         case OpCodes.invokestatic:
@@ -1633,37 +1690,6 @@ namespace JavaVirtualMachine
                                     };
                                     nativeMethodFrame.Execute();
                                 }
-                            }
-                            break;
-                        case OpCodes.invokedynamic:
-                            {
-                                //https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
-                                //https://docs.oracle.com/javase/8/docs/technotes/guides/vm/multiple-language-support.html
-                                short index = readShort(code, ref ip);
-                                CInvokeDynamicInfo callSiteSpecifier = (CInvokeDynamicInfo)ClassFile.Constants[index];
-
-                                ip += 2; //Third and fourth bytes are zero
-
-                                var resolution = JavaHelper.ResolveCallSiteSpecifier(callSiteSpecifier);
-
-                                ClassFile methodHandlesCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandles");
-                                MethodInfo getLookupMethod = methodHandlesCFile.MethodDictionary[("lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;")];
-                                JavaHelper.RunJavaFunction(getLookupMethod);
-                                int lookupObj = Utility.PopInt(Stack, ref sp);
-
-                                string methodDescriptor = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;"
-                                                            + callSiteSpecifier.BootstrapMethod.GetArgumentsDescriptor()
-                                                            + ")Ljava/lang/invoke/CallSite;";
-                                MethodInfo bootstrapMethod = JavaHelper.ResolveMethod("java/lang/invoke/MethodHandle", "invoke", methodDescriptor);
-
-                                int[] arguments = new int[bootstrapMethod.NumOfArgs() + 1];
-                                arguments[0] = resolution.methodHandle;
-                                arguments[1] = lookupObj;
-                                arguments[2] = JavaHelper.CreateJavaStringLiteral(callSiteSpecifier.Name);
-                                arguments[3] = resolution.methodType;
-                                resolution.staticArgs.CopyTo(arguments, 4);
-
-                                JavaHelper.RunJavaFunction(bootstrapMethod, arguments);
                             }
                             break;
                         case OpCodes.@new:

@@ -330,7 +330,30 @@ namespace JavaVirtualMachine
         public static MethodInfo ResolveMethod(string className, string methodName, string methodDescriptor)
         {
             ClassFile cFile = ClassFileManager.GetClassFile(className);
-            return cFile.MethodDictionary[(methodName, methodDescriptor)];
+
+            MethodInfo method = null;
+            bool foundMethod = false;
+            //Search for method in cFile's method dictionary. If it's not there, repeat search in cFile's super and so on
+            while (!foundMethod)
+            {
+                foundMethod = cFile.MethodDictionary.TryGetValue((methodName, methodDescriptor), out method);
+                if(!foundMethod && className == "java/lang/invoke/MethodHandle")
+                {
+                    //Signature polymorphic method
+                    if (methodName == "invoke")
+                    {
+                        method = cFile.MethodDictionary[("invoke", "([Ljava/lang/Object;)Ljava/lang/Object;")];
+                        foundMethod = true;
+                    }
+                    else if(methodName == "invokeExact")
+                    {
+                        method = cFile.MethodDictionary[("invokeExact", "([Ljava/lang/Object;)Ljava/lang/Object;")];
+                        foundMethod = true;
+                    }
+                }
+                cFile = cFile.SuperClass;
+            }
+            return method;
         }
         public static string MakeDescriptor(HeapObject returnType, HeapArray parameterTypes)
         {
@@ -409,7 +432,6 @@ namespace JavaVirtualMachine
             {
                 throw new NotImplementedException();
             }
-
             return methodHandleObjAddr;
 
         }

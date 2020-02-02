@@ -105,5 +105,12 @@ namespace JavaVirtualMachine
         {
             return (AccessFlags & (int)flag) != 0;
         }
+        public bool IsSignaturePolymorphic()
+        {
+            return ClassFile.Name == "java/lang/invoke/MethodHandle" &&
+                    Descriptor == "([Ljava/lang/Object;)Ljava/lang/Object;" &&
+                    HasFlag(MethodInfoFlag.VarArgs) &&
+                    HasFlag(MethodInfoFlag.Native);
+        }
     }
 }
