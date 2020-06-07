@@ -14,9 +14,9 @@ namespace JVMUnitTests
         [InlineData(-10, 3)]
         public void iaddTest(int val1, int val2)
         {
-            ClassFileManager.InitDictionary(@"\\GMRDC1\Folder Redirection\Lorenzo.Lopez\Desktop\rt\",
-                                            Program.BaseDirectory + @"build\classes\java\main\");
-            ClassFile testClassFile = new ClassFile(@"C:\Users\Lorenzo.Lopez\LocalFolder\GradleProject\build\classes\java\main\TestClassFile.class");
+            ClassFileManager.InitDictionary(@"..\..\..\..\rt\",
+                                            Program.BaseDirectory+ @"build\classes\java\main\");
+            ClassFile testClassFile = new ClassFile(@"..\..\..\..\GradleProject\build\classes\java\main\TestClassFile.class");
             DebugWriter.WriteDebugMessages = false;
             MethodInfo mainMethodInfo = testClassFile.MethodDictionary[("main", "()V")];
             MethodFrame mainMethodFrame = new MethodFrame(mainMethodInfo);
@@ -40,9 +40,9 @@ namespace JVMUnitTests
         [InlineData(1099512347776, 1239233)]
         public void laddTest(long val1, long val2)
         {
-            ClassFileManager.InitDictionary(@"\\GMRDC1\Folder Redirection\Lorenzo.Lopez\Desktop\rt\",
+            ClassFileManager.InitDictionary(@"..\..\..\..\rt\",
                                             Program.BaseDirectory + @"build\classes\java\main\");
-            ClassFile testClassFile = new ClassFile(@"C:\Users\Lorenzo.Lopez\LocalFolder\GradleProject\build\classes\java\main\TestClassFile.class");
+            ClassFile testClassFile = new ClassFile(@"..\..\..\..\GradleProject\build\classes\java\main\TestClassFile.class"); 
             DebugWriter.WriteDebugMessages = false;
             MethodInfo mainMethodInfo = testClassFile.MethodDictionary[("main", "()V")];
             MethodFrame mainMethodFrame = new MethodFrame(mainMethodInfo);
@@ -70,9 +70,9 @@ namespace JVMUnitTests
         [InlineData(-10.1f, 3.93f)]
         public void faddTest(float val1, float val2)
         {
-            ClassFileManager.InitDictionary(@"\\GMRDC1\Folder Redirection\Lorenzo.Lopez\Desktop\rt\",
+            ClassFileManager.InitDictionary(@"..\..\..\..\rt\",
                                             Program.BaseDirectory + @"build\classes\java\main\");
-            ClassFile testClassFile = new ClassFile(@"C:\Users\Lorenzo.Lopez\LocalFolder\GradleProject\build\classes\java\main\TestClassFile.class");
+            ClassFile testClassFile = new ClassFile(@"..\..\..\..\GradleProject\build\classes\java\main\TestClassFile.class");
             DebugWriter.WriteDebugMessages = false;
             MethodInfo mainMethodInfo = testClassFile.MethodDictionary[("main", "()V")];
             MethodFrame mainMethodFrame = new MethodFrame(mainMethodInfo);
@@ -96,9 +96,9 @@ namespace JVMUnitTests
         [InlineData(-10.1f, 3.93f)]
         public void daddTest(double val1, double val2)
         {
-            ClassFileManager.InitDictionary(@"\\GMRDC1\Folder Redirection\Lorenzo.Lopez\Desktop\rt\",
+            ClassFileManager.InitDictionary(@"..\..\..\..\rt\",
                                             Program.BaseDirectory + @"build\classes\java\main\");
-            ClassFile testClassFile = new ClassFile(@"C:\Users\Lorenzo.Lopez\LocalFolder\GradleProject\build\classes\java\main\TestClassFile.class");
+            ClassFile testClassFile = new ClassFile(@"..\..\..\..\GradleProject\build\classes\java\main\TestClassFile.class");
             DebugWriter.WriteDebugMessages = false;
             MethodInfo mainMethodInfo = testClassFile.MethodDictionary[("main", "()V")];
             MethodFrame mainMethodFrame = new MethodFrame(mainMethodInfo);
@@ -128,9 +128,9 @@ namespace JVMUnitTests
         [InlineData(int.MinValue)]
         public void inegTest(int value)
         {
-            ClassFileManager.InitDictionary(@"\\GMRDC1\Folder Redirection\Lorenzo.Lopez\Desktop\rt\",
+            ClassFileManager.InitDictionary(@"..\..\..\..\rt\",
                                             Program.BaseDirectory + @"build\classes\java\main\");
-            ClassFile testClassFile = new ClassFile(@"C:\Users\Lorenzo.Lopez\LocalFolder\GradleProject\build\classes\java\main\TestClassFile.class");
+            ClassFile testClassFile = new ClassFile(@"..\..\..\..\GradleProject\build\classes\java\main\TestClassFile.class");
             DebugWriter.WriteDebugMessages = false;
             MethodInfo mainMethodInfo = testClassFile.MethodDictionary[("main", "()V")];
             MethodFrame mainMethodFrame = new MethodFrame(mainMethodInfo);

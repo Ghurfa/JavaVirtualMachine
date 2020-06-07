@@ -1609,6 +1609,8 @@ namespace JavaVirtualMachine
                                 ClassFileManager.InitializeClass(methodRef.ClassName);
 
                                 int[] arguments = new int[methodRef.NumOfArgs()];
+
+
                                 for (int i = arguments.Length - 1; i >= 0; i--)
                                 {
                                     arguments[i] = Utility.PopInt(Stack, ref sp);

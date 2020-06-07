@@ -27,7 +27,7 @@ namespace JavaVirtualMachine
                 HeapObject obj = null;
                 if (!MethodInfo.HasFlag(MethodInfoFlag.Static)) obj = Heap.GetObject(Args[0]);
 
-                if (className == "Program" && nameAndDescriptor == ("ToggleDebugWrite", "(Z)V"))
+                if (className == "Program" && nameAndDescriptor == ("   ", "(Z)V"))
                 {
                     DebugWriter.WriteDebugMessages = Args[0] != 0;
                     JavaHelper.ReturnVoid();
@@ -59,7 +59,7 @@ namespace JavaVirtualMachine
                     }
                     return;
                 }
-                else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("available", "()I"))
+                else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("available0", "()I"))
                 {
                     FieldReferenceValue pathField = (FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;");
                     if (pathField.Address == 0)
@@ -901,7 +901,7 @@ namespace JavaVirtualMachine
                     MethodInfo setPropertyMethod = propertiesObject.ClassFile.MethodDictionary[("setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;")];
 
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("java.home"),
-                                                                        JavaHelper.CreateJavaStringLiteral(@"C:\Program Files\Java\jdk1.8.0_221\jre")); Utility.PopInt(Stack, ref sp);
+                                                                        JavaHelper.CreateJavaStringLiteral(Program.JavaHome)); Utility.PopInt(Stack, ref sp);
                     //JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("java.library.path"),
                     //JavaHelper.CreateJavaStringLiteral(Environment.GetEnvironmentVariable("JAVA_HOME") + "\\bin")); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("file.encoding"),

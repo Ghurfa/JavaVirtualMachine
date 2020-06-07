@@ -74,7 +74,7 @@ namespace JavaVirtualMachine
                     Console.ForegroundColor = DebugDefaultColor;
                 }
                 Console.Write($"{new string(' ', Depth * Spacing)}{methodInfo.ClassFile.Name}.{methodInfo.Name}");
-                WriteArgs(interfaceMethodInfo.Descriptor, true, args);
+                WriteArgs(interfaceMethodInfo.Descriptor, methodInfo.HasFlag(MethodInfoFlag.Static), args);
                 Console.Write($"   (interface {interfaceMethodInfo.ClassName})");
                 Console.WriteLine();
             }

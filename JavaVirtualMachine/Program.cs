@@ -9,7 +9,8 @@ namespace JavaVirtualMachine
     public class Program
     {
         public static Stack<MethodFrame> MethodFrameStack = new Stack<MethodFrame>();
-        public static string BaseDirectory = @"C:\Users\Lorenzo.Lopez\LocalFolder\GradleProject\";
+        public static string BaseDirectory = @"..\..\..\..\GradleProject\";
+        public static string JavaHome = @"C:\Program Files\Java\jdk1.8.0_221\jre";
         public static Stopwatch Stopwatch = new Stopwatch();
         static void Main(string[] args)
         {
@@ -17,7 +18,7 @@ namespace JavaVirtualMachine
             Console.WindowWidth = 180;
 
             //%JAVA_HOME%\bin\javap" - s -p -c -verbose Scanner.class > ..\..\..\Scanner.javap
-            ClassFileManager.InitDictionary(@"\\GMRDC1\Folder Redirection\Lorenzo.Lopez\Desktop\rt\",
+            ClassFileManager.InitDictionary(@"..\..\..\..\rt\",
                                             BaseDirectory + @"build\classes\java\main\");
 
             //Create main thread object
