@@ -901,7 +901,7 @@ namespace JavaVirtualMachine
                     MethodInfo setPropertyMethod = propertiesObject.ClassFile.MethodDictionary[("setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;")];
 
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("java.home"),
-                                                                        JavaHelper.CreateJavaStringLiteral(Program.JavaHome)); Utility.PopInt(Stack, ref sp);
+                                                                        JavaHelper.CreateJavaStringLiteral(Program.Configuration.javaHome)); Utility.PopInt(Stack, ref sp);
                     //JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("java.library.path"),
                     //JavaHelper.CreateJavaStringLiteral(Environment.GetEnvironmentVariable("JAVA_HOME") + "\\bin")); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("file.encoding"),
@@ -922,10 +922,8 @@ namespace JavaVirtualMachine
                                                                         JavaHelper.CreateJavaStringLiteral(Environment.UserName)); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("user.home"),
                                                                         JavaHelper.CreateJavaStringLiteral(Environment.GetFolderPath(Environment.SpecialFolder.Personal))); Utility.PopInt(Stack, ref sp);
-                    JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("user.dir"),
-                                                                        JavaHelper.CreateJavaStringLiteral(Program.BaseDirectory)); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("java.library.path"),
-                                                                        JavaHelper.CreateJavaStringLiteral(@"C:\Program Files\Java\jdk-12.0.1\lib")); Utility.PopInt(Stack, ref sp);
+                                                                        JavaHelper.CreateJavaStringLiteral(Program.Configuration.javaHome + @"\lib")); Utility.PopInt(Stack, ref sp);
                     JavaHelper.RunJavaFunction(setPropertyMethod, Args[0], JavaHelper.CreateJavaStringLiteral("sun.lang.ClassLoader.allowArraySyntax"),
                                                                         JavaHelper.CreateJavaStringLiteral("true")); Utility.PopInt(Stack, ref sp);
 

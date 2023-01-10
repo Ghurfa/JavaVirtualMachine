@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Implementation-Vendor: Oracle Corporation
 Implementation-Title: Java Runtime Environment
-Implementation-Version: 1.8.0_221
+Implementation-Version: 1.8.0_261
 Specification-Vendor: Oracle Corporation
 Created-By: 1.7.0_07 (Oracle Corporation)
 Specification-Title: Java Platform API Specification

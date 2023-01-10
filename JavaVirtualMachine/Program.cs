@@ -1,4 +1,5 @@
 ﻿using JavaVirtualMachine.ConstantPoolInfo;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,20 +7,32 @@ using System.IO;
 
 namespace JavaVirtualMachine
 {
+    internal struct Config
+    {
+        public string rtPath { get; set; }
+        public string javaHome { get; set; }
+        public string[] srcPaths { get; set; }
+        public bool printStackTrace { get; set; }
+    }
+
     public class Program
     {
         public static Stack<MethodFrame> MethodFrameStack = new Stack<MethodFrame>();
-        public static string BaseDirectory = @"..\..\..\..\GradleProject\";
-        public static string JavaHome = @"C:\Program Files\Java\jdk1.8.0_221\jre";
         public static Stopwatch Stopwatch = new Stopwatch();
+
+        internal static Config Configuration { get; private set; }
+
         static void Main(string[] args)
         {
-            Stopwatch.Start();
+            string configPath = @"..\..\..\config.json";
+            Configuration = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
+            DebugWriter.WriteDebugMessages = Configuration.printStackTrace;
+
             Console.WindowWidth = 180;
+            Stopwatch.Start();
 
             //%JAVA_HOME%\bin\javap" - s -p -c -verbose Scanner.class > ..\..\..\Scanner.javap
-            ClassFileManager.InitDictionary(@"..\..\..\..\rt\",
-                                            BaseDirectory + @"build\classes\java\main\");
+            ClassFileManager.InitDictionary(runtimePath: Configuration.rtPath, otherPaths: Configuration.srcPaths);
 
             //Create main thread object
             ClassFile threadGroupCFile = ClassFileManager.GetClassFile("java/lang/ThreadGroup");

@@ -11,7 +11,7 @@ namespace JavaVirtualMachine
     {
         private static Dictionary<string, (string path, ClassFile classFile, bool isStaticLoaded)> classFiles;
         private static string javaClassesFilePath;
-        public static void InitDictionary(string javaClassesFilePath, params string[] otherPaths)
+        public static void InitDictionary(string runtimePath, params string[] otherPaths)
         {
             classFiles = new Dictionary<string, (string, ClassFile, bool)>();
             foreach (string path in otherPaths)
@@ -24,7 +24,7 @@ namespace JavaVirtualMachine
                     classFiles.Add(fileName.Replace('\\', '/'), (path, null, false));
                 }
             }
-            ClassFileManager.javaClassesFilePath = javaClassesFilePath;
+            ClassFileManager.javaClassesFilePath = runtimePath;
         }
         public static ClassFile GetClassFile(CClassInfo cClassInfo)
         {

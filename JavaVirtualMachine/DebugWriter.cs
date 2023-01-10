@@ -8,7 +8,7 @@ namespace JavaVirtualMachine
     public static class DebugWriter
     {
         public static int Depth = 0;
-        public static bool WriteDebugMessages = false;
+        public static bool WriteDebugMessages = true;
         const int Spacing = 2;
         const ConsoleColor DebugDefaultColor = ConsoleColor.DarkGray;
         const ConsoleColor NativeMethodColor = ConsoleColor.Green;
