@@ -38,142 +38,13 @@ namespace JavaVirtualMachine
         //Fields
         const ConsoleColor fieldNameColor = ConsoleColor.Yellow;
         const ConsoleColor fieldTypeColor = ConsoleColor.Cyan;
+
         public static void WriteDebugMessage(string message)
         {
             Console.ForegroundColor = DebugDefaultColor;
             Console.WriteLine(message);
         }
-        public static void CallFuncDebugWrite(MethodInfo methodInfo, int[] args)
-        {
-            if (WriteDebugMessages)
-            {
-                if (methodInfo.HasFlag(MethodInfoFlag.Native))
-                {
-                    Console.ForegroundColor = NativeMethodColor;
-                }
-                else
-                {
-                    Console.ForegroundColor = DebugDefaultColor;
-                }
-                Console.Write($"{new string(' ', Depth * Spacing)}{methodInfo.ClassFile.Name}.{methodInfo.Name}");
-                WriteArgs(methodInfo.Descriptor, methodInfo.HasFlag(MethodInfoFlag.Static), args);
-                Console.WriteLine();
-            }
-            Depth++;
-        }
-        public static void CallFuncDebugWrite(MethodInfo methodInfo, int[] args, CInterfaceMethodRefInfo interfaceMethodInfo)
-        {
-            if (WriteDebugMessages)
-            {
-                if (methodInfo.HasFlag(MethodInfoFlag.Native))
-                {
-                    Console.ForegroundColor = NativeMethodColor;
-                }
-                else
-                {
-                    Console.ForegroundColor = DebugDefaultColor;
-                }
-                Console.Write($"{new string(' ', Depth * Spacing)}{methodInfo.ClassFile.Name}.{methodInfo.Name}");
-                WriteArgs(interfaceMethodInfo.Descriptor, methodInfo.HasFlag(MethodInfoFlag.Static), args);
-                Console.Write($"   (interface {interfaceMethodInfo.ClassName})");
-                Console.WriteLine();
-            }
-            Depth++;
-        }
-        public static void ReturnedValueDebugWrite(int returnValue)
-        {
-            Depth--;
-            if (WriteDebugMessages)
-            {
-                Console.ForegroundColor = DebugDefaultColor;
-                Console.CursorLeft = Depth * Spacing;
-                Console.Write("Returned ");
 
-                MethodInfo methodInfo = Program.MethodFrameStack.Peek().MethodInfo;
-                string returnType = methodInfo.Descriptor.Split(')')[1];
-                WriteValue(returnType, returnValue);
-                Console.WriteLine();
-            }
-        }
-        public static void ReturnedValueDebugWrite(long returnValue)
-        {
-            Depth--;
-            if (WriteDebugMessages)
-            {
-                Console.ForegroundColor = DebugDefaultColor;
-                Console.CursorLeft = Depth * Spacing;
-                Console.Write("Returned ");
-
-                MethodInfo methodInfo = Program.MethodFrameStack.Peek().MethodInfo;
-                string returnType = methodInfo.Descriptor.Split(')')[1];
-                WriteWideValue(returnType[0], returnValue);
-                Console.WriteLine();
-            }
-        }
-        public static void ReturnedVoidDebugWrite()
-        {
-            Depth--;
-            if (WriteDebugMessages)
-            {
-                Console.ForegroundColor = DebugDefaultColor;
-                Console.WriteLine($"{new string(' ', Depth * Spacing)}Returned void");
-            }
-        }
-        public static void ExceptionThrownDebugWrite(JavaException exception)
-        {
-            Depth--;
-            if (WriteDebugMessages)
-            {
-                Console.ForegroundColor = ExceptionThrownColor;
-                Console.WriteLine($"{new string(' ', Depth * Spacing)}Threw {exception.ClassFile.Name} ({exception.Message})");
-            }
-        }
-        private static void WriteArgs(string descriptor, bool isStatic, int[] args)
-        {
-            if (WriteDebugMessages)
-            {
-                ConsoleColor originalColor = Console.ForegroundColor;
-                int argIndex = 0;
-                int i;
-                Console.Write("(");
-                if (!isStatic)
-                {
-                    int callerAddr = args[0];
-                    if (Heap.GetObject(callerAddr) is HeapArray heapArr)
-                    {
-                        WriteArrayValue(JavaHelper.ClassObjectName(heapArr.ItemTypeClassObjAddr), callerAddr);
-                    }
-                    else
-                    {
-                        ClassFile argCFile = Heap.GetObject(callerAddr).ClassFile;
-                        WriteObjectValue(argCFile.Name, callerAddr);
-                    }
-                    argIndex++;
-                }
-                for (i = 1; descriptor[i] != ')';)
-                {
-                    if (!isStatic || i != 1)
-                    {
-                        Console.Write(", ");
-                    }
-                    string argumentType = JavaHelper.ReadDescriptorArg(descriptor, ref i);
-                    if (argumentType[0] == 'J' || argumentType[0] == 'D')
-                    {
-                        long argument = (args[argIndex], args[argIndex + 1]).ToLong();
-                        WriteWideValue(argumentType[0], argument);
-                        argIndex += 2;
-                    }
-                    else
-                    {
-                        int argument = args[argIndex];
-                        WriteValue(argumentType, argument);
-                        argIndex++;
-                    }
-                }
-                Console.ForegroundColor = originalColor;
-                Console.Write(')');
-            }
-        }
         private static void WriteWideValue(char character, long argument)
         {
             if (character == 'J')
@@ -274,48 +145,6 @@ namespace JavaVirtualMachine
                 Console.Write('/');
 
                 Console.ForegroundColor = objAddrColor;
-                Console.Write(argument);
-            }
-        }
-        private static void WriteValue(string argumentType, int argument)
-        {
-            if (argumentType[0] == 'L')
-            {
-                WriteObjectValue(argumentType.Substring(1, argumentType.Length - 2), argument);
-            }
-            else if (argumentType[0] == '[')
-            {
-                WriteArrayValue(argumentType.Substring(1), argument);
-            }
-            else if (argumentType[0] == 'Z')
-            {
-                Console.ForegroundColor = booleanColor;
-                Console.Write(argument != 0 ? "True" : "False");
-            }
-            else if (argumentType[0] == 'C')
-            {
-                Console.ForegroundColor = charColor;
-                Console.Write("'" + (char)argument + "'");
-            }
-            else if (argumentType[0] == 'F')
-            {
-                Console.ForegroundColor = floatColor;
-                Console.Write(JavaHelper.StoredFloatToFloat(argument));
-            }
-            else
-            {
-                switch (argumentType[0])
-                {
-                    case 'B':
-                        Console.ForegroundColor = byteColor;
-                        break;
-                    case 'I':
-                        Console.ForegroundColor = integerColor;
-                        break;
-                    case 'S':
-                        Console.ForegroundColor = shortColor;
-                        break;
-                }
                 Console.Write(argument);
             }
         }

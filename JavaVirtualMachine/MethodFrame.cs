@@ -1,11 +1,5 @@
 ﻿using JavaVirtualMachine.Attributes;
 using JavaVirtualMachine.ConstantPoolInfo;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace JavaVirtualMachine
 {
@@ -1581,7 +1575,7 @@ namespace JavaVirtualMachine
                                 {
                                     if (method.HasFlag(MethodInfoFlag.Native))
                                     {
-                                        DebugWriter.CallFuncDebugWrite(method, arguments);
+                                        Program.StackTracePrinter.PrintMethodCall(method, arguments);
                                         NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
                                         {
                                             Args = arguments
@@ -1590,7 +1584,7 @@ namespace JavaVirtualMachine
                                     }
                                     else
                                     {
-                                        DebugWriter.CallFuncDebugWrite(method, arguments);
+                                        Program.StackTracePrinter.PrintMethodCall(method, arguments);
                                         MethodFrame methodFrame = new MethodFrame(method);
                                         arguments.CopyTo(methodFrame.Locals, 0);
                                         methodFrame.Execute();
@@ -1625,14 +1619,14 @@ namespace JavaVirtualMachine
 
                                 if (!method.HasFlag(MethodInfoFlag.Native))
                                 {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments);
+                                    Program.StackTracePrinter.PrintMethodCall(method, arguments);
                                     MethodFrame methodFrame = new MethodFrame(method);
                                     arguments.CopyTo(methodFrame.Locals, 0);
                                     methodFrame.Execute();
                                 }
                                 else
                                 {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments);
+                                    Program.StackTracePrinter.PrintMethodCall(method, arguments);
                                     NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
                                     {
                                         Args = arguments
@@ -1678,14 +1672,14 @@ namespace JavaVirtualMachine
 
                                 if (!method.HasFlag(MethodInfoFlag.Native))
                                 {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments, interfaceMethodRef);
+                                    Program.StackTracePrinter.PrintMethodCall(method, arguments, interfaceMethodRef);
                                     MethodFrame methodFrame = new MethodFrame(method);
                                     arguments.CopyTo(methodFrame.Locals, 0);
                                     methodFrame.Execute();
                                 }
                                 else
                                 {
-                                    DebugWriter.CallFuncDebugWrite(method, arguments, interfaceMethodRef);
+                                    Program.StackTracePrinter.PrintMethodCall(method, arguments, interfaceMethodRef);
                                     NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
                                     {
                                         Args = arguments
@@ -1892,7 +1886,7 @@ namespace JavaVirtualMachine
                     }
                     if (!handled)
                     {
-                        DebugWriter.ExceptionThrownDebugWrite(ex);
+                        Program.StackTracePrinter.PrintMethodThrewException(MethodInfo, ex);
                         if (Program.MethodFrameStack.Count > 1)
                         {
                             MethodFrame parentFrame = Program.MethodFrameStack.Peek(1);

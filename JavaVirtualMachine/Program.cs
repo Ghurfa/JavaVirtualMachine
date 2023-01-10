@@ -1,4 +1,5 @@
 ﻿using JavaVirtualMachine.ConstantPoolInfo;
+using JavaVirtualMachine.StackTrace;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,18 +16,18 @@ namespace JavaVirtualMachine
         public bool printStackTrace { get; set; }
     }
 
-    public class Program
+    internal class Program
     {
         public static Stack<MethodFrame> MethodFrameStack = new Stack<MethodFrame>();
         public static Stopwatch Stopwatch = new Stopwatch();
+        public static Config Configuration { get; private set; }
+        public static IStackTracePrinter StackTracePrinter;
 
-        internal static Config Configuration { get; private set; }
-
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             string configPath = @"..\..\..\config.json";
             Configuration = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
-            DebugWriter.WriteDebugMessages = Configuration.printStackTrace;
+            StackTracePrinter = Configuration.printStackTrace ? ColorfulStackTracePrinter.Instance : EmptyStackTracePrinter.Instance;
 
             Console.WindowWidth = 180;
             Stopwatch.Start();

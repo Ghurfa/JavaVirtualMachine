@@ -105,7 +105,8 @@ namespace JavaVirtualMachine
 
         public static void ReturnValue(int retVal)
         {
-            DebugWriter.ReturnedValueDebugWrite(retVal);
+            MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;
+            Program.StackTracePrinter.PrintMethodReturn(currMethod, retVal);
             Program.MethodFrameStack.Pop();
             if (Program.MethodFrameStack.Count >= 0)
             {
@@ -115,7 +116,8 @@ namespace JavaVirtualMachine
         }
         public static void ReturnLargeValue(long retVal)
         {
-            DebugWriter.ReturnedValueDebugWrite(retVal);
+            MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;
+            Program.StackTracePrinter.PrintMethodReturn(currMethod, retVal);
             Program.MethodFrameStack.Pop();
             if (Program.MethodFrameStack.Count >= 0)
             {
@@ -125,13 +127,14 @@ namespace JavaVirtualMachine
         }
         public static void ReturnVoid()
         {
-            DebugWriter.ReturnedVoidDebugWrite();
+            MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;
+            Program.StackTracePrinter.PrintMethodReturn(currMethod);
             Program.MethodFrameStack.Pop();
         }
 
         public static void RunJavaFunction(MethodInfo methodInfo, params int[] arguments)
         {
-            DebugWriter.CallFuncDebugWrite(methodInfo, arguments);
+            Program.StackTracePrinter.PrintMethodCall(methodInfo, arguments);
             if (methodInfo.HasFlag(MethodInfoFlag.Native))
             {
                 NativeMethodFrame methodFrame = new NativeMethodFrame(methodInfo);

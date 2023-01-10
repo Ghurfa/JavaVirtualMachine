@@ -25,15 +25,12 @@ namespace JavaVirtualMachine
                 string className = ClassFile.Name;
                 (string funcName, string descriptor) nameAndDescriptor = (MethodInfo.Name, MethodInfo.Descriptor);
                 HeapObject obj = null;
-                if (!MethodInfo.HasFlag(MethodInfoFlag.Static)) obj = Heap.GetObject(Args[0]);
-
-                if (className == "Program" && nameAndDescriptor == ("   ", "(Z)V"))
+                if (!MethodInfo.HasFlag(MethodInfoFlag.Static))
                 {
-                    DebugWriter.WriteDebugMessages = Args[0] != 0;
-                    JavaHelper.ReturnVoid();
-                    return;
+                    obj = Heap.GetObject(Args[0]);
                 }
-                else if (className == "java/io/FileDescriptor" && nameAndDescriptor == ("initIDs", "()V"))
+
+                if (className == "java/io/FileDescriptor" && nameAndDescriptor == ("initIDs", "()V"))
                 {
                     JavaHelper.ReturnVoid();
                     return;
@@ -226,22 +223,6 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/InputStreamReader" && nameAndDescriptor == ("<init>", "(Ljava/io/InputStream;)V"))
                 {
-                    JavaHelper.ReturnVoid();
-                    return;
-                }
-                else if (className == "java/io/PrintStream" && nameAndDescriptor == ("newLine", "()V"))
-                {
-                    Console.WriteLine();
-                    JavaHelper.ReturnVoid();
-                    return;
-                }
-                else if (className == "java/io/PrintStream" && nameAndDescriptor == ("println", "(Ljava/lang/String;)V"))
-                {
-                    HeapObject heapString = Heap.GetObject(Args[1]);
-                    FieldReferenceValue fieldArr = (FieldReferenceValue)heapString.GetField("value", "[C");
-                    char[] charArr = (char[])((HeapArray)Heap.GetItem(fieldArr.Address)).Array;
-                    Console.ResetColor();
-                    Console.WriteLine(charArr);
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -1703,7 +1684,7 @@ namespace JavaVirtualMachine
             }
             catch (JavaException ex)
             {
-                DebugWriter.ExceptionThrownDebugWrite(ex);
+                Program.StackTracePrinter.PrintMethodThrewException(MethodInfo, ex);
                 if (Program.MethodFrameStack.Count > 1)
                 {
                     MethodFrame parentFrame = Program.MethodFrameStack.Peek(1);
