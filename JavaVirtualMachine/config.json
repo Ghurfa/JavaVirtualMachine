@@ -2,5 +2,5 @@
   "rtPath": "..\\..\\..\\..\\rt\\",
   "javaHome": "C:\\Program Files (x86)\\Java\\jre1.8.0_261\\",
   "srcPaths": [ "..\\..\\..\\..\\GradleProject\\build\\classes\\java\\main\\" ],
-  "printStackTrace": true
+  "printStackTrace": "file"
 }
