@@ -222,7 +222,7 @@ namespace JavaVirtualMachine
             Console.ForegroundColor = objAddrColor;
             Console.WriteLine(objAddr);
 
-            foreach (FieldInfo field in obj.ClassFile.InstanceFields())
+            foreach (FieldInfo field in obj.ClassFile.InstanceFields)
             {
                 Console.ForegroundColor = fieldNameColor;
                 Console.Write(field.Name);

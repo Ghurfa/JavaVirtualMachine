@@ -16,9 +16,8 @@ namespace JavaVirtualMachine
         public CPInfo[] Constants { get; private set; }
 
         public Dictionary<(string name, string descriptor), long> StaticFieldsDictionary;
-        public FieldInfo[] FieldsInfo;
-        public FieldValue[] ObjectFields;
-        public Dictionary<(string, string), int> InstanceSlots;
+        public List<FieldInfo> DeclaredFields { get; private set; }
+        public List<FieldInfo> InstanceFields { get; private set; }
 
         public Dictionary<(string name, string descriptor), MethodInfo> MethodDictionary { get; private set; }
         //public Dictionary<(string name, string descriptor), MethodInfo> InstanceMethodDictionary { get; private set; }
@@ -87,20 +86,10 @@ namespace JavaVirtualMachine
 
             if (data.Length != 0) throw new InvalidDataException();
         }
+
         public bool IsInterface()
         {
             return (AccessFlags & 0x200) != 0;
-        }
-
-        public IEnumerable<FieldInfo> InstanceFields()
-        {
-            for (int i = 0; i < FieldsInfo.Length; i++)
-            {
-                if(!FieldsInfo[i].HasFlag(FieldInfoFlag.Static))
-                {
-                    yield return FieldsInfo[i];
-                }
-            }
         }
 
         private void readConstantPool(ref ReadOnlySpan<byte> data)
@@ -165,6 +154,7 @@ namespace JavaVirtualMachine
                 Constants[i]?.Update(Constants);
             }
         }
+
         private void readInterfaces(ref ReadOnlySpan<byte> data)
         {
             ushort interfaceCount = data.ReadTwo();
@@ -178,113 +168,52 @@ namespace JavaVirtualMachine
                 InterfaceNames[i] = classInfo.Name;
             }
         }
+
         private void readFields(ref ReadOnlySpan<byte> data)
         {
             ushort fieldsCount = data.ReadTwo();
-            FieldInfo[] temp = new FieldInfo[fieldsCount];
-            LinkedList<FieldInfo> fieldsLinkedList = new LinkedList<FieldInfo>();
-            LinkedList<FieldValue> instanceFieldValues = new LinkedList<FieldValue>();
-            InstanceSlots = new Dictionary<(string, string), int>();
+            DeclaredFields = new List<FieldInfo>(fieldsCount);
+            InstanceFields = new List<FieldInfo>();
+
             for (int i = 0; i < fieldsCount; i++)
             {
-                temp[i] = new FieldInfo(ref data, Constants);
-                if (temp[i].HasFlag(FieldInfoFlag.Static))
+                FieldInfo field = new FieldInfo(ref data, Constants);
+                if (field.HasFlag(FieldInfoFlag.Static))
                 {
-                    switch (temp[i].Descriptor[0])
-                    {
-                        case 'B':
-                        case 'C':
-                        case 'S':
-                        case 'Z':
-                        case 'F':
-                        case 'I':
-                        case 'D':
-                        case 'J':
-                        case 'L':
-                        case '[':
-                            StaticFieldsDictionary.Add((temp[i].Name, temp[i].Descriptor), 0L);
-                            break;
-                        default:
-                            throw new InvalidDataException();
-                    }
+                    StaticFieldsDictionary.Add((field.Name, field.Descriptor), 0L);
                 }
                 else
                 {
-                    switch (temp[i].Descriptor[0])
-                    {
-                        case 'B':
-                        case 'C':
-                        case 'S':
-                        case 'Z':
-                        case 'F':
-                        case 'I':
-                            instanceFieldValues.AddLast(new FieldNumber(0));
-                            break;
-                        case 'D':
-                        case 'J':
-                            instanceFieldValues.AddLast(new FieldLargeNumber(0));
-                            break;
-                        case 'L':
-                        case '[':
-                            instanceFieldValues.AddLast(new FieldReferenceValue(0));
-                            break;
-                        default:
-                            throw new InvalidDataException();
-                    }
-                    InstanceSlots.Add((temp[i].Name, temp[i].Descriptor), InstanceSlots.Count);
+                    InstanceFields.Add(field);
                 }
-                fieldsLinkedList.AddLast(temp[i]);
+                DeclaredFields.Add(field);
             }
 
             ClassFile cFile = this;
             while (cFile.SuperClassInfo != null)
             {
                 cFile = ClassFileManager.GetClassFile(cFile.SuperClassInfo.Name);
-                foreach (FieldInfo fieldValue in cFile.InstanceFields())
+                foreach (FieldInfo superField in cFile.InstanceFields)
                 {
                     //if (fieldValue.HasFlag(FieldInfoFlag.Private)) continue;
                     bool exists = false;
-                    foreach ((string name, string descriptor) in InstanceSlots.Keys)
+                    foreach (FieldInfo field in InstanceFields)
                     {
-                        if (name == fieldValue.Name)
+                        if (field.Name == superField.Name)
                         {
                             exists = true;
                             break;
                         }
-}
-                    if (exists) continue;
-
-                    switch (fieldValue.Descriptor[0])
-                    {
-                        case 'B':
-                        case 'C':
-                        case 'S':
-                        case 'Z':
-                        case 'F':
-                        case 'I':
-                            instanceFieldValues.AddLast(new FieldNumber(0));
-                            break;
-                        case 'D':
-                        case 'J':
-                            instanceFieldValues.AddLast(new FieldLargeNumber(0));
-                            break;
-                        case 'L':
-                        case '[':
-                            instanceFieldValues.AddLast(new FieldReferenceValue(0));
-                            break;
-                        default:
-                            throw new InvalidDataException();
                     }
-                    InstanceSlots.Add((fieldValue.Name, fieldValue.Descriptor), InstanceSlots.Count);
+
+                    if (!exists)
+                    {
+                        InstanceFields.Add(superField);
+                    }
                 }
             }
-
-            FieldsInfo = new FieldInfo[fieldsLinkedList.Count];
-            fieldsLinkedList.CopyTo(FieldsInfo, 0);
-
-            ObjectFields = new FieldValue[instanceFieldValues.Count];
-            instanceFieldValues.CopyTo(ObjectFields, 0);
         }
+
         private void readMethods(ref ReadOnlySpan<byte> data)
         {
             ushort methodsCount = data.ReadTwo();
@@ -295,6 +224,7 @@ namespace JavaVirtualMachine
                 MethodDictionary.Add((temp[i].Name, temp[i].Descriptor), temp[i]);
             }
         }
+
         private void readAttributes(ref ReadOnlySpan<byte> data)
         {
             ushort attributesCount = data.ReadTwo();
@@ -341,6 +271,7 @@ namespace JavaVirtualMachine
                 }
             }
         }
+
         private void updateConstantPoolWithAttributes()
         {
             for (int i = 1; i < Constants.Length; i++)

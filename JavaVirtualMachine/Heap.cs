@@ -21,7 +21,7 @@ namespace JavaVirtualMachine
         public static int CreateObject(int classFileIdx)
         {
             ClassFile cFile = ClassFileManager.ClassFiles[classFileIdx];
-            int numBytes = 8 + 8 * cFile.InstanceSlots.Count;
+            int numBytes = 8 + 8 * cFile.InstanceFields.Count;
             int addr = AllocateMemory(numBytes);
             classFileIdx.AsByteArray().CopyTo(Memory.Slice(addr));
             return addr;
@@ -47,7 +47,7 @@ namespace JavaVirtualMachine
             else
             {
                 ClassFile cFile = ClassFileManager.ClassFiles[cFileIdx];
-                numBytes = ObjectFieldOffset + ObjectFieldSize * cFile.InstanceSlots.Count;
+                numBytes = ObjectFieldOffset + ObjectFieldSize * cFile.InstanceFields.Count;
             }
 
             int newObjAddr = AllocateMemory(numBytes);

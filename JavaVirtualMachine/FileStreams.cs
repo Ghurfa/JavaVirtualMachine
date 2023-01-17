@@ -44,6 +44,7 @@ namespace JavaVirtualMachine
             FileStream fileStream = File.Open(file, FileMode.Open);
             streams.Add(file, fileStream);
         }
+
         public static void WriteBytes(string file, Span<byte> span, bool append)
         {
             FileStream fileStream = streams[file];

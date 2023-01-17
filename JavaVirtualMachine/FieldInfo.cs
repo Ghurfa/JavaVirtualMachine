@@ -1,9 +1,6 @@
 ﻿using JavaVirtualMachine.Attributes;
 using JavaVirtualMachine.ConstantPoolInfo;
-using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace JavaVirtualMachine
 {
@@ -19,6 +16,7 @@ namespace JavaVirtualMachine
         Synthetic = 0x1000,	//Declared synthetic; not present in the source code.
         Enum = 0x4000,	    //Declared as an element of an enum.
     }
+
     public class FieldInfo
     {
         public readonly ushort AccessFlags;
@@ -28,8 +26,8 @@ namespace JavaVirtualMachine
         public readonly AttributeInfo[] AttributeInfo;
         public readonly string Name;
         public readonly string Descriptor;
-
         public readonly bool Deprecated;
+
         public FieldInfo(ref ReadOnlySpan<byte> data, CPInfo[] constants)
         {
             AccessFlags = data.ReadTwo();

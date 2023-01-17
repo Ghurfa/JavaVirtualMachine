@@ -463,7 +463,7 @@ namespace JavaVirtualMachine
                     if (publicOnly)
                     {
                         length = 0;
-                        foreach (FieldInfo fieldInfo in cFile.FieldsInfo)
+                        foreach (FieldInfo fieldInfo in cFile.DeclaredFields)
                         {
                             if (fieldInfo.HasFlag(FieldInfoFlag.Public))
                             {
@@ -473,19 +473,21 @@ namespace JavaVirtualMachine
                     }
                     else
                     {
-                        length = cFile.FieldsInfo.Length;
+                        length = cFile.DeclaredFields.Count;
                     }
 
                     int[] fields = new int[length];
                     int instanceSlot = 0;
                     int staticSlot = 0;
-                    for (int i = 0; i < cFile.FieldsInfo.Length; i++)
+                    int addIdx = 0;
+
+                    foreach (FieldInfo field in cFile.DeclaredFields)
                     {
-                        if (publicOnly && !cFile.FieldsInfo[i].HasFlag(FieldInfoFlag.Public))
+                        if (publicOnly && !field.HasFlag(FieldInfoFlag.Public))
                         {
                             continue;
                         }
-                        FieldInfo fieldInfo = cFile.FieldsInfo[i];
+
                         int fieldCFileIdx = ClassFileManager.GetClassFileIndex("java/lang/reflect/Field");
                         ClassFile fieldCFile = ClassFileManager.ClassFiles[fieldCFileIdx];
                         int fieldAddr = Heap.CreateObject(fieldCFileIdx);
@@ -493,14 +495,14 @@ namespace JavaVirtualMachine
                         MethodInfo initMethod = fieldCFile.MethodDictionary[("<init>", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;IILjava/lang/String;[B)V")];
 
                         string type;
-                        if (fieldInfo.Descriptor.Length == 1)
+                        if (field.Descriptor.Length == 1)
                         {
-                            type = JavaHelper.PrimitiveFullName(cFile.FieldsInfo[i].Descriptor);
+                            type = JavaHelper.PrimitiveFullName(field.Descriptor);
                         }
-                        else type = fieldInfo.Descriptor;
+                        else type = field.Descriptor;
 
                         int slotArg;
-                        if (cFile.FieldsInfo[i].HasFlag(FieldInfoFlag.Static))
+                        if (field.HasFlag(FieldInfoFlag.Static))
                         {
                             slotArg = staticSlot++;
                         }
@@ -511,14 +513,14 @@ namespace JavaVirtualMachine
 
                         JavaHelper.RunJavaFunction(initMethod, fieldAddr,
                                                             ClassObjectManager.GetClassObjectAddr(cFile.Name),
-                                                            new FieldReferenceValue(JavaHelper.CreateJavaStringLiteral(fieldInfo.Name)).Address,
+                                                            JavaHelper.CreateJavaStringLiteral(field.Name),
                                                             ClassObjectManager.GetClassObjectAddr(type),
-                                                            cFile.FieldsInfo[i].AccessFlags,
+                                                            field.AccessFlags,
                                                             slotArg,
-                                                            new FieldReferenceValue(JavaHelper.CreateJavaStringLiteral(fieldInfo.Descriptor)).Address,
+                                                            JavaHelper.CreateJavaStringLiteral(field.Descriptor),
                                                             0);
 
-                        fields[i] = fieldAddr;
+                        fields[addIdx++] = fieldAddr;
                     }
 
                     int fieldsArrAddr = Heap.CreateArray(fields, ClassObjectManager.GetClassObjectAddr("Ljava/lang/reflect/Field;"));

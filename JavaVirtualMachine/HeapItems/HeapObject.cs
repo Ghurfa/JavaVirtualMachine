@@ -21,7 +21,7 @@ namespace JavaVirtualMachine
 
         public int GetField(string name, string descriptor)
         {
-            int slot = ClassFile.InstanceSlots[(name, descriptor)];
+            int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
             return GetFieldByOffset(Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
         }
 
@@ -35,7 +35,7 @@ namespace JavaVirtualMachine
 
         public long GetFieldLong(string name, string descriptor)
         {
-            int slot = ClassFile.InstanceSlots[(name, descriptor)];
+            int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
             return GetFieldByOffsetLong(Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
         }
 
@@ -49,7 +49,7 @@ namespace JavaVirtualMachine
 
         public void SetField(string name, string descriptor, int value)
         {
-            int slot = ClassFile.InstanceSlots[(name, descriptor)];
+            int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
             SetFieldByOffset(Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
         }
 
@@ -60,7 +60,7 @@ namespace JavaVirtualMachine
 
         public void SetFieldLong(string name, string descriptor, long value)
         {
-            int slot = ClassFile.InstanceSlots[(name, descriptor)];
+            int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
             SetFieldByOffsetLong(Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
         }
 
