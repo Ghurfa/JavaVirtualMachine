@@ -1,7 +1,4 @@
-﻿using JavaVirtualMachine.ConstantPoolInfo;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using JavaVirtualMachine.ConstantPoolItems;
 
 namespace JavaVirtualMachine
 {
@@ -20,16 +17,9 @@ namespace JavaVirtualMachine
 
         public static int GetClassObjectAddr(string name)
         {
-            if (name[0] != '[')
+            if (name[0] == 'L')
             {
-                for (int i = 0; i < name.Length; i++)
-                {
-                    if (name[i] == 'L')
-                    {
-                        name = name.Substring(0, i) + name.Substring(i + 1, name.Length - i - 2);
-                    }
-                    break;
-                }
+                name = name[1..^1]; // Convert Ljava.name.thingy; to java.name.thingy
             }
 
             if (name.Length == 1)
@@ -41,18 +31,12 @@ namespace JavaVirtualMachine
                 name = name.Replace('/', '.');
             }
 
-            int addr = 0;
-            if (!classObjects.TryGetValue(name, out addr))
+            if (!classObjects.TryGetValue(name, out int addr))
             {
                 addr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/lang/Class"));
                 classObjects.Add(name, addr);
                 HeapObject obj = Heap.GetObject(addr);
-                if (name == "java.io.OutputStream")
-                {
-
-                }
                 obj.SetField("name", "Ljava/lang/String;", JavaHelper.CreateJavaStringLiteral(name));
-                ;
             }
             return addr;
         }

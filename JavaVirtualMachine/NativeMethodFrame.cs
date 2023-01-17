@@ -1,12 +1,7 @@
 ﻿using JavaVirtualMachine.Attributes;
-using JavaVirtualMachine.ConstantPoolInfo;
-using System;
-using System.Collections.Generic;
-using System.IO;
+using JavaVirtualMachine.ConstantPoolItems;
 using System.Net;
-using System.Net.Sockets;
 using System.Net.NetworkInformation;
-using System.Text;
 using System.Runtime.InteropServices;
 
 namespace JavaVirtualMachine
@@ -214,10 +209,6 @@ namespace JavaVirtualMachine
                         HeapArray javaByteArr = Heap.GetArray(byteArrAddr);
 
                         throw new NotImplementedException();
-                        //FileStreams.WriteBytes(path, (byte[])javaByteArr.Array, offset, length, append);
-
-                        JavaHelper.ReturnVoid();
-                        return;
                     }
 
                     JavaHelper.ReturnVoid();
@@ -1471,9 +1462,7 @@ namespace JavaVirtualMachine
                         return;
                     }
 
-                    byte[] data = new byte[length];
-                    int ret = FileStreams.ReadBytes(path, data.AsSpan());
-                    Heap.PutData((int)address, data);
+                    int ret = FileStreams.ReadBytes(path, Heap.GetSpan((int)address, length));
 
                     JavaHelper.ReturnValue(ret);
                     return;

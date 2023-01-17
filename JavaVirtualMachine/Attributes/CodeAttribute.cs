@@ -1,8 +1,5 @@
-﻿using JavaVirtualMachine.ConstantPoolInfo;
-using System;
-using System.Collections.Generic;
+﻿using JavaVirtualMachine.ConstantPoolItems;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace JavaVirtualMachine.Attributes
 {

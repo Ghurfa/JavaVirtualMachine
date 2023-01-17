@@ -1,6 +1,5 @@
 ﻿using JavaVirtualMachine.Attributes;
-using JavaVirtualMachine.ConstantPoolInfo;
-using Newtonsoft.Json.Linq;
+using JavaVirtualMachine.ConstantPoolItems;
 
 namespace JavaVirtualMachine
 {

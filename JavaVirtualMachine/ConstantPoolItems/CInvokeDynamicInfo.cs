@@ -1,9 +1,6 @@
 ﻿using JavaVirtualMachine.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace JavaVirtualMachine.ConstantPoolInfo
+namespace JavaVirtualMachine.ConstantPoolItems
 {
     public class CInvokeDynamicInfo : CPInfo
     {

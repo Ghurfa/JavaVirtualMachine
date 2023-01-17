@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace JavaVirtualMachine
+﻿namespace JavaVirtualMachine
 {
     public static class ThreadManager
     {

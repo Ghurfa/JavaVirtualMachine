@@ -1,7 +1,4 @@
-﻿using System;
-using System.Reflection;
-
-namespace JavaVirtualMachine
+﻿namespace JavaVirtualMachine
 {
     public class HeapArray : HeapObject
     {
@@ -15,11 +12,11 @@ namespace JavaVirtualMachine
             ItemSize = itemSize;
         }
 
-        public short GetItemDataByte(int index)
+        public byte GetItemDataByte(int index)
         {
             if (ItemSize != 1) throw new InvalidOperationException();
 
-            return Heap.GetShort(Address + Heap.ArrayBaseOffset + ItemSize * index);
+            return Heap.GetByte(Address + Heap.ArrayBaseOffset + ItemSize * index);
         }
 
         public short GetItemDataShort(int index)
@@ -43,7 +40,7 @@ namespace JavaVirtualMachine
             return Heap.GetLong(Address + Heap.ArrayBaseOffset + ItemSize * index);
         }
 
-        public short GetItemDataByOffsetByte(int offset)
+        public byte GetItemDataByOffsetByte(int offset)
         {
             if (ItemSize != 1) throw new InvalidOperationException();
 

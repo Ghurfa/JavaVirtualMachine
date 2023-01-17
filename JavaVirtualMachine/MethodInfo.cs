@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Linq;
-using JavaVirtualMachine.ConstantPoolInfo;
+﻿using JavaVirtualMachine.ConstantPoolItems;
 using System.Runtime.InteropServices;
 using JavaVirtualMachine.Attributes;
 

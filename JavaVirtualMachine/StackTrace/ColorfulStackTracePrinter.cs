@@ -1,7 +1,6 @@
-﻿using JavaVirtualMachine.ConstantPoolInfo;
-using System.IO.Pipes;
+﻿using JavaVirtualMachine.ConstantPoolItems;
 
-namespace JavaVirtualMachine.StackTrace
+namespace JavaVirtualMachine.StackTracePrinters
 {
     internal class ColorfulStackTracePrinter : IStackTracePrinter
     {

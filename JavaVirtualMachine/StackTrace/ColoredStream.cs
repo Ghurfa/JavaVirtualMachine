@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace JavaVirtualMachine.StackTrace
+namespace JavaVirtualMachine.StackTracePrinters
 {
     internal class ColoredStream
     {

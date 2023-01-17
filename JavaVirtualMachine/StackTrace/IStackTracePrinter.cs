@@ -1,6 +1,6 @@
-﻿using JavaVirtualMachine.ConstantPoolInfo;
+﻿using JavaVirtualMachine.ConstantPoolItems;
 
-namespace JavaVirtualMachine.StackTrace
+namespace JavaVirtualMachine.StackTracePrinters
 {
     internal interface IStackTracePrinter
     {

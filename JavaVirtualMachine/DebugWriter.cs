@@ -1,9 +1,4 @@
-﻿using JavaVirtualMachine.ConstantPoolInfo;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace JavaVirtualMachine
+﻿namespace JavaVirtualMachine
 {
     public static class DebugWriter
     {
@@ -212,7 +207,7 @@ namespace JavaVirtualMachine
         public static void PrintObject(int objAddr)
         {
             Console.WriteLine();
-            HeapObject obj = Heap.GetObject(objAddr) ?? throw new InvalidOperationException();
+            HeapObject obj = Heap.GetObject(objAddr);
 
             string className = obj.ClassFile.Name;
             Console.ForegroundColor = classNameColor;

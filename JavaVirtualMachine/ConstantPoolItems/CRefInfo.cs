@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace JavaVirtualMachine.ConstantPoolInfo
+﻿namespace JavaVirtualMachine.ConstantPoolItems
 {
     public abstract class CRefInfo : CPInfo
     {

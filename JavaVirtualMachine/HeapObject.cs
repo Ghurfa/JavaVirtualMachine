@@ -1,11 +1,4 @@
-﻿using JavaVirtualMachine.ConstantPoolInfo;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Xml.Linq;
-
-namespace JavaVirtualMachine
+﻿namespace JavaVirtualMachine
 {
     public class HeapObject
     {
@@ -17,6 +10,7 @@ namespace JavaVirtualMachine
         public HeapObject(int address)
         {
             Address = address;
+            _classFile = null;
         }
 
         public int GetField(string name, string descriptor)

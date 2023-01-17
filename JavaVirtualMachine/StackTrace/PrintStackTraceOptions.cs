@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace JavaVirtualMachine.StackTrace
+namespace JavaVirtualMachine.StackTracePrinters
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     internal enum PrintStackTraceOptions

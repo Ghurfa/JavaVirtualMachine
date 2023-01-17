@@ -1,10 +1,6 @@
-﻿using JavaVirtualMachine.ConstantPoolInfo;
-using JavaVirtualMachine.StackTrace;
+﻿using JavaVirtualMachine.StackTracePrinters;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Pipes;
 
 namespace JavaVirtualMachine

@@ -1,5 +1,5 @@
 ﻿using JavaVirtualMachine.Attributes;
-using JavaVirtualMachine.ConstantPoolInfo;
+using JavaVirtualMachine.ConstantPoolItems;
 using System.Runtime.InteropServices;
 
 namespace JavaVirtualMachine
@@ -26,7 +26,6 @@ namespace JavaVirtualMachine
         public readonly AttributeInfo[] AttributeInfo;
         public readonly string Name;
         public readonly string Descriptor;
-        public readonly bool Deprecated;
 
         public FieldInfo(ref ReadOnlySpan<byte> data, CPInfo[] constants)
         {
@@ -53,7 +52,6 @@ namespace JavaVirtualMachine
                         break;
                     case "Deprecated":
                         AttributeInfo[i] = new DeprecatedAttribute(ref data, constants);
-                        Deprecated = true;
                         break;
                     case "RuntimeVisibleAnnotations":
                         AttributeInfo[i] = new RuntimeVisibleAnnotationsAttribute(ref data, constants);
