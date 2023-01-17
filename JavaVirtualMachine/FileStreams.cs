@@ -17,15 +17,15 @@ namespace JavaVirtualMachine
             streams.Add(file, fileStream);
         }
 
-        public static int ReadBytes(string file, byte[] array, int offset, int length)
+        public static int ReadBytes(string file, Span<byte> span)
         {
             FileStream fileStream = streams[file];
-            return fileStream.Read(array, offset, length);
+            return fileStream.Read(span);
         }
 
-        public static int ReadBytesFromConsole(byte[] array, int offset, int length)
+        public static int ReadBytesFromConsole(Span<byte> span)
         {
-            return ConsoleInputReader.BaseStream.Read(array, offset, length);
+            return ConsoleInputReader.BaseStream.Read(span);
         }
 
         public static int AvailableBytes(string file)
@@ -44,31 +44,32 @@ namespace JavaVirtualMachine
             FileStream fileStream = File.Open(file, FileMode.Open);
             streams.Add(file, fileStream);
         }
-        public static void WriteBytes(string file, byte[] array, int offset, int length, bool append)
+        public static void WriteBytes(string file, Span<byte> span, bool append)
         {
             FileStream fileStream = streams[file];
             if(append)
             {
                 fileStream.Position = fileStream.Length;
-                fileStream.Write(array, offset, length);
+                fileStream.Write(span);
             }
             else
             {
                 fileStream.Position = 0;
-                fileStream.Write(array, offset, length);
+                fileStream.Write(span);
             }
             fileStream.Flush();
         }
 
-        public static void WriteBytesToConsole(byte[] array, int offset, int length)
+        public static void WriteBytesToConsole(Span<byte> span)
         {
             Console.ForegroundColor = ConsoleColor.White;
-            ConsoleOutputStream.Write(array, offset, length);
+            ConsoleOutputStream.Write(span);
         }
-        public static void WriteBytesToError(byte[] array, int offset, int length)
+
+        public static void WriteBytesToError(Span<byte> span)
         {
             Console.ForegroundColor = ConsoleColor.White;
-            ConsoleErrorStream.Write(array, offset, length);
+            ConsoleErrorStream.Write(span);
         }
 
         public static void Close(string file)

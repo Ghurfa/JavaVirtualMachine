@@ -15,7 +15,7 @@ namespace JavaVirtualMachine
 
         public CPInfo[] Constants { get; private set; }
 
-        public Dictionary<(string name, string descriptor), FieldValue> StaticFieldsDictionary;
+        public Dictionary<(string name, string descriptor), long> StaticFieldsDictionary;
         public FieldInfo[] FieldsInfo;
         public FieldValue[] ObjectFields;
         public Dictionary<(string, string), int> InstanceSlots;
@@ -74,7 +74,7 @@ namespace JavaVirtualMachine
 
             readInterfaces(ref data);
 
-            StaticFieldsDictionary = new Dictionary<(string name, string descriptor), FieldValue>();
+            StaticFieldsDictionary = new Dictionary<(string name, string descriptor), long>();
             readFields(ref data);
 
             MethodDictionary = new Dictionary<(string, string), MethodInfo>();
@@ -198,15 +198,11 @@ namespace JavaVirtualMachine
                         case 'Z':
                         case 'F':
                         case 'I':
-                            StaticFieldsDictionary.Add((temp[i].Name, temp[i].Descriptor), new FieldNumber(0));
-                            break;
                         case 'D':
                         case 'J':
-                            StaticFieldsDictionary.Add((temp[i].Name, temp[i].Descriptor), new FieldLargeNumber(0));
-                            break;
                         case 'L':
                         case '[':
-                            StaticFieldsDictionary.Add((temp[i].Name, temp[i].Descriptor), new FieldReferenceValue(0));
+                            StaticFieldsDictionary.Add((temp[i].Name, temp[i].Descriptor), 0L);
                             break;
                         default:
                             throw new InvalidDataException();

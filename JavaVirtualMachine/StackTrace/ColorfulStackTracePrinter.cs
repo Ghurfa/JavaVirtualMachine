@@ -199,8 +199,8 @@ namespace JavaVirtualMachine.StackTrace
                 ClassFile argCFile = Heap.GetObject(address).ClassFile;
                 if (argCFile.Name == "java/lang/String")
                 {
-                    FieldReferenceValue charArr = (FieldReferenceValue)Heap.GetObject(address).GetField("value", "[C");
-                    if (charArr.Address == 0)
+                    int charArrAddr = Heap.GetObject(address).GetField("value", "[C");
+                    if (charArrAddr == 0)
                     {
                         PrintWithColor(classNameColor, Heap.GetObject(address).ClassFile.Name);
                     }

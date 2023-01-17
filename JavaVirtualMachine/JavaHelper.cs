@@ -1,6 +1,7 @@
 ﻿using JavaVirtualMachine.ConstantPoolInfo;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace JavaVirtualMachine
@@ -38,69 +39,32 @@ namespace JavaVirtualMachine
                 }
             }
             return numOfArgs;
-            /*
-            i++;
-            switch (descriptor[i])
-            {
-                case 'B':
-                    return (numOfArgs, ReturnType.@byte);
-                case 'C':
-                    return (numOfArgs, ReturnType.@char);
-                case 'D':
-                    return (numOfArgs, ReturnType.@double);
-                case 'F':
-                    return (numOfArgs, ReturnType.@float);
-                case 'I':
-                    return (numOfArgs, ReturnType.@int);
-                case 'J':
-                    return (numOfArgs, ReturnType.@long);
-                case 'L':
-                    return (numOfArgs, ReturnType.@reference);
-                case 'S':
-                    return (numOfArgs, ReturnType.@short);
-                case 'Z':
-                    return (numOfArgs, ReturnType.boolean);
-                case '[':
-                    return (numOfArgs, ReturnType.array);
-                case 'V':
-                    return (numOfArgs, ReturnType.@void);
-                default:
-                    throw new InvalidOperationException();
-            }*/
         }
-        public static int CreateJavaStringLiteral(string @string)
+        public static int CreateJavaStringLiteral(string str)
         {
+            if (StringPool.StringAddresses.TryGetValue(str, out int strAddr))
+            {
+                return strAddr;
+            }
 
-            HeapArray charArray = new HeapArray(@string.ToCharArray(), ClassObjectManager.GetClassObjectAddr("char"));
-            int charArrAddr = Heap.AddItem(charArray);
-            HeapObject stringObj = new HeapObject(ClassFileManager.GetClassFile("java/lang/String"));
-            stringObj.SetField("value", "[C", new FieldReferenceValue(charArrAddr));
-            int stringObjAddr = Heap.AddItem(stringObj);
-            return StringPool.Intern(stringObjAddr);
+            byte[] data = Encoding.Unicode.GetBytes(str);
+            int charArrAddr = Heap.CreateArray(2, data.Length / 2, ClassObjectManager.GetClassObjectAddr("char"));
+            data.CopyTo(Heap.GetArray(charArrAddr).GetDataSpan());
 
+            int newStrObjAddr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/lang/String"));
+            Heap.GetObject(newStrObjAddr).SetField("value", "[C", charArrAddr);
+
+            StringPool.StringAddresses.Add(str, newStrObjAddr);
+            return newStrObjAddr;
         }
 
         public static string ReadJavaString(int address)
         {
             HeapObject stringObj = Heap.GetObject(address);
-            FieldReferenceValue charArrayReference = (FieldReferenceValue)stringObj.GetField("value", "[C");
-            HeapArray charArray = (HeapArray)Heap.GetItem(charArrayReference.Address);
-            return new string((char[])charArray.Array);
-        }
+            int charArrAddr = stringObj.GetField("value", "[C");
+            HeapArray charArray = Heap.GetArray(charArrAddr);
 
-        public static string ReadJavaString(FieldReferenceValue reference)
-        {
-            HeapObject stringObj = Heap.GetObject(reference.Address);
-            FieldReferenceValue charArrayReference = (FieldReferenceValue)stringObj.GetField("value", "[C");
-            HeapArray charArray = (HeapArray)Heap.GetItem(charArrayReference.Address);
-            return new string((char[])charArray.Array);
-        }
-
-        public static string ReadJavaString(HeapObject stringObj)
-        {
-            FieldReferenceValue charArrayReference = (FieldReferenceValue)stringObj.GetField("value", "[C");
-            HeapArray charArray = (HeapArray)Heap.GetItem(charArrayReference.Address);
-            return new string((char[])charArray.Array);
+            return Encoding.Unicode.GetString(charArray.GetDataSpan());
         }
 
         public static void ReturnValue(int retVal)
@@ -151,8 +115,9 @@ namespace JavaVirtualMachine
 
         public static void ThrowJavaException(string type)
         {
-            ClassFile exceptionCFile = ClassFileManager.GetClassFile(type);
-            int objRef = Heap.AddItem(new HeapObject(exceptionCFile));
+            int exceptionCFileIdx = ClassFileManager.GetClassFileIndex(type);
+            ClassFile exceptionCFile = ClassFileManager.ClassFiles[exceptionCFileIdx];
+            int objRef = Heap.CreateObject(exceptionCFileIdx);
 
             MethodInfo initMethod = exceptionCFile.MethodDictionary[("<init>", "()V")];
             RunJavaFunction(initMethod, objRef);
@@ -313,8 +278,7 @@ namespace JavaVirtualMachine
         }
         public static string ClassObjectName(HeapObject classObj)
         {
-            FieldReferenceValue nameField = (FieldReferenceValue)classObj.GetField("name", "Ljava/lang/String;");
-            return ReadJavaString(nameField.Address);
+            return ReadJavaString(classObj.GetField("name", "Ljava/lang/String;"));
         }
         public static string ReadDescriptorArg(string descriptor, ref int i)
         {
@@ -340,7 +304,7 @@ namespace JavaVirtualMachine
             while (!foundMethod)
             {
                 foundMethod = cFile.MethodDictionary.TryGetValue((methodName, methodDescriptor), out method);
-                if(!foundMethod && className == "java/lang/invoke/MethodHandle")
+                if (!foundMethod && className == "java/lang/invoke/MethodHandle")
                 {
                     //Signature polymorphic method
                     if (methodName == "invoke")
@@ -348,7 +312,7 @@ namespace JavaVirtualMachine
                         method = cFile.MethodDictionary[("invoke", "([Ljava/lang/Object;)Ljava/lang/Object;")];
                         foundMethod = true;
                     }
-                    else if(methodName == "invokeExact")
+                    else if (methodName == "invokeExact")
                     {
                         method = cFile.MethodDictionary[("invokeExact", "([Ljava/lang/Object;)Ljava/lang/Object;")];
                         foundMethod = true;
@@ -358,15 +322,16 @@ namespace JavaVirtualMachine
             }
             return method;
         }
+
         public static string MakeDescriptor(HeapObject returnType, HeapArray parameterTypes)
         {
-            int[] paramTypesArr = (int[])parameterTypes.Array;
+            int[] paramTypesArr = MemoryMarshal.Cast<byte, int>(parameterTypes.GetDataSpan()).ToArray();
 
             string descriptor = "(";
             for (int i = 0; i < paramTypesArr.Length; i++)
             {
                 throw new NotImplementedException();
-                string typeName = JavaHelper.ClassObjectName(paramTypesArr[i]);
+                string typeName = ClassObjectName(paramTypesArr[i]);
             }
 
             string returnTypeName = ClassObjectName(returnType);
@@ -391,9 +356,10 @@ namespace JavaVirtualMachine
 
             return descriptor;
         }
+
         public static void CreateMethodTypeObj(string descriptor)
         {
-            ClassFile methodTypeCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodType");
+            ClassFile methodTypeCFile = ClassFileManager.ClassFiles[ClassFileManager.GetClassFileIndex("java/lang/invoke/MethodType")];
             MethodInfo methodTypeMethod = methodTypeCFile.MethodDictionary[("methodType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;")];
 
             //Read method type
@@ -405,8 +371,8 @@ namespace JavaVirtualMachine
                 int classObj = ClassObjectManager.GetClassObjectAddr(argumentType);
                 paramsClassObjs.Add(classObj);
             }
-            HeapArray paramsTypesArr = new HeapArray(paramsClassObjs.ToArray(), ClassObjectManager.GetClassObjectAddr("java/lang/Class"));
-            int paramsArrAddr = Heap.AddItem(paramsTypesArr);
+
+            int paramsArrAddr = Heap.CreateArray(paramsClassObjs.ToArray(), ClassObjectManager.GetClassObjectAddr("java/lang/Class"));
 
             i++;
             string retType = ReadDescriptorArg(descriptor, ref i);
@@ -414,9 +380,11 @@ namespace JavaVirtualMachine
 
             RunJavaFunction(methodTypeMethod, retClassObj, paramsArrAddr);
         }
+
         public static int ResolveMethodHandle(CMethodHandleInfo methodHandle)
         {
-            ClassFile cFile = ClassFileManager.GetClassFile(((CMethodRefInfo)methodHandle.Reference).ClassName);
+            string className = ((CMethodRefInfo)methodHandle.Reference).ClassName;
+            ClassFile cFile = ClassFileManager.ClassFiles[ClassFileManager.GetClassFileIndex(className)];
 
             var methodRef = (CMethodRefInfo)methodHandle.Reference;
             MethodInfo methodInfo = cFile.MethodDictionary[(methodRef.Name, methodRef.Descriptor)];
@@ -425,19 +393,18 @@ namespace JavaVirtualMachine
             MethodFrame frame = Program.MethodFrameStack.Peek();
             int bootstrapMethodType = Utility.PopInt(frame.Stack, ref frame.sp);
 
-            ClassFile methodHandleCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandle");
-            HeapObject methodHandleObj = new HeapObject(methodHandleCFile);
-            int methodHandleObjAddr = Heap.AddItem(methodHandleObj);
+            int methodHandleObjAddr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/lang/invoke/MethodHandle"));
+            HeapObject methodHandleObj = Heap.GetObject(methodHandleObjAddr);
 
-            methodHandleObj.SetField("type", "Ljava/lang/invoke/MethodType;", new FieldReferenceValue(bootstrapMethodType));
+            methodHandleObj.SetField("type", "Ljava/lang/invoke/MethodType;", bootstrapMethodType);
 
-            if(methodInfo.HasFlag(MethodInfoFlag.VarArgs))
+            if (methodInfo.HasFlag(MethodInfoFlag.VarArgs))
             {
                 throw new NotImplementedException();
             }
             return methodHandleObjAddr;
-
         }
+
         public static (int methodHandle, int methodType, int[] staticArgs) ResolveCallSiteSpecifier(CInvokeDynamicInfo callSiteSpecifier)
         {
             CMethodHandleInfo bootstrapMethodHandle = callSiteSpecifier.BootstrapMethod.MethodHandle;
@@ -450,16 +417,16 @@ namespace JavaVirtualMachine
             CPInfo[] staticArgsConstants = callSiteSpecifier.BootstrapMethod.Arguments;
 
             int numOfLargeArgs = 0;
-            foreach(CPInfo constant in staticArgsConstants)
+            foreach (CPInfo constant in staticArgsConstants)
             {
-                if(constant is CLongInfo || constant is CDoubleInfo)
+                if (constant is CLongInfo || constant is CDoubleInfo)
                 {
                     numOfLargeArgs++;
                 }
             }
 
             int[] staticArgs = new int[staticArgsConstants.Length + numOfLargeArgs];
-            for(int i = 0; i < staticArgsConstants.Length; i++)
+            for (int i = 0; i < staticArgsConstants.Length; i++)
             {
                 CPInfo constant = callSiteSpecifier.BootstrapMethod.Arguments[i];
                 switch (constant)

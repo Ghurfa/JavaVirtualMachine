@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace JavaVirtualMachine
 {
@@ -24,7 +25,7 @@ namespace JavaVirtualMachine
                 Program.MethodFrameStack.Push(this);
                 string className = ClassFile.Name;
                 (string funcName, string descriptor) nameAndDescriptor = (MethodInfo.Name, MethodInfo.Descriptor);
-                HeapObject obj = null;
+                HeapObject obj = default;
                 if (!MethodInfo.HasFlag(MethodInfoFlag.Static))
                 {
                     obj = Heap.GetObject(Args[0]);
@@ -58,11 +59,11 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("available0", "()I"))
                 {
-                    FieldReferenceValue pathField = (FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;");
-                    if (pathField.Address == 0)
+                    int pathFieldAddr = obj.GetField("path", "Ljava/lang/String;");
+                    if (pathFieldAddr == 0)
                     {
-                        FieldReferenceValue fileDescriptor = (FieldReferenceValue)obj.GetField("fd", "Ljava/io/FileDescriptor;");
-                        long handle = ((FieldLargeNumber)Heap.GetObject(fileDescriptor.Address).GetField("handle", "J")).Value;
+                        int fileDescriptorAddr = obj.GetField("fd", "Ljava/io/FileDescriptor;");
+                        long handle = Heap.GetObject(fileDescriptorAddr).GetField("handle", "J");
                         if (handle != 0)
                         {
                             JavaHelper.ThrowJavaException("java/io/IOException");
@@ -76,7 +77,7 @@ namespace JavaVirtualMachine
                     }
                     else
                     {
-                        string path = JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;"));
+                        string path = JavaHelper.ReadJavaString(obj.GetField("path", "Ljava/lang/String;"));
                         int available = FileStreams.AvailableBytes(path);
                         JavaHelper.ReturnValue(available);
                         return;
@@ -84,7 +85,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("close0", "()V"))
                 {
-                    string path = JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;"));
+                    string path = JavaHelper.ReadJavaString(obj.GetField("path", "Ljava/lang/String;"));
                     FileStreams.Close(path);
                     obj.SetField("closed", "Z", 1);
                     JavaHelper.ReturnVoid();
@@ -112,24 +113,24 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/FileInputStream" && nameAndDescriptor == ("readBytes", "([BII)I"))
                 {
-                    FieldReferenceValue pathField = (FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;");
+                    int pathFieldAddr = obj.GetField("path", "Ljava/lang/String;");
 
                     int byteArrAddr = Args[1];
                     int offset = Args[2];
                     int length = Args[3];
 
-                    if (pathField.Address == 0)
+                    if (pathFieldAddr == 0)
                     {
-                        FieldReferenceValue fileDescriptor = (FieldReferenceValue)obj.GetField("fd", "Ljava/io/FileDescriptor;");
-                        long handle = ((FieldLargeNumber)Heap.GetObject(fileDescriptor.Address).GetField("handle", "J")).Value;
+                        int fileDescriptorAddr = obj.GetField("fd", "Ljava/io/FileDescriptor;");
+                        long handle = Heap.GetObject(fileDescriptorAddr).GetFieldLong("handle", "J");
                         if (handle != 0)
                         {
                             JavaHelper.ThrowJavaException("java/io/IOException");
                         }
                         else
                         {
-                            HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
-                            int bytesRead = FileStreams.ReadBytesFromConsole((byte[])javaByteArr.Array, offset, length);
+                            HeapArray javaByteArr = Heap.GetArray(byteArrAddr);
+                            int bytesRead = FileStreams.ReadBytesFromConsole(javaByteArr.GetDataSpan().Slice(offset, length));
 
                             JavaHelper.ReturnValue(bytesRead);
                             return;
@@ -137,10 +138,10 @@ namespace JavaVirtualMachine
                     }
                     else
                     {
-                        string path = JavaHelper.ReadJavaString(pathField);
-                        HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
+                        string path = JavaHelper.ReadJavaString(pathFieldAddr);
+                        HeapArray javaByteArr = Heap.GetArray(byteArrAddr);
 
-                        int bytesRead = FileStreams.ReadBytes(path, (byte[])javaByteArr.Array, offset, length);
+                        int bytesRead = FileStreams.ReadBytes(path, javaByteArr.GetDataSpan().Slice(offset, length));
 
                         JavaHelper.ReturnValue(bytesRead);
                         return;
@@ -148,7 +149,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/FileOutputStream" && nameAndDescriptor == ("close0", "()V"))
                 {
-                    string path = JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;"));
+                    string path = JavaHelper.ReadJavaString(obj.GetField("path", "Ljava/lang/String;"));
                     FileStreams.Close(path);
                     obj.SetField("closed", "Z", 1);
                     JavaHelper.ReturnVoid();
@@ -176,28 +177,28 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/FileOutputStream" && nameAndDescriptor == ("writeBytes", "([BIIZ)V"))
                 {
-                    FieldReferenceValue pathField = (FieldReferenceValue)obj.GetField("path", "Ljava/lang/String;");
+                    int pathFieldAddr = obj.GetField("path", "Ljava/lang/String;");
                     int byteArrAddr = Args[1];
                     int offset = Args[2];
                     int length = Args[3];
                     bool append = Args[4] != 0;
 
-                    if (pathField.Address == 0)
+                    if (pathFieldAddr == 0)
                     {
-                        HeapObject fileDescriptor = Heap.GetObject(((FieldReferenceValue)obj.GetField("fd", "Ljava/io/FileDescriptor;")).Address);
-                        long handle = ((FieldLargeNumber)fileDescriptor.GetField("handle", "J")).Value; //address (defined in java/io/FileDescriptor set(int))
+                        HeapObject fileDescriptor = Heap.GetObject(obj.GetField("fd", "Ljava/io/FileDescriptor;"));
+                        long handle = fileDescriptor.GetFieldLong("handle", "J"); //address (defined in java/io/FileDescriptor set(int))
                         if (handle == 1)
                         {
-                            HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
-                            FileStreams.WriteBytesToConsole((byte[])javaByteArr.Array, offset, length);
+                            HeapArray javaByteArr = Heap.GetArray(byteArrAddr);
+                            FileStreams.WriteBytesToConsole(javaByteArr.GetDataSpan().Slice(offset, length));
 
                             JavaHelper.ReturnVoid();
                             return;
                         }
                         else if (handle == 2)
                         {
-                            HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
-                            FileStreams.WriteBytesToError((byte[])javaByteArr.Array, offset, length);
+                            HeapArray javaByteArr = Heap.GetArray(byteArrAddr);
+                            FileStreams.WriteBytesToError(javaByteArr.GetDataSpan().Slice(offset, length));
 
                             JavaHelper.ReturnVoid();
                             return;
@@ -209,20 +210,16 @@ namespace JavaVirtualMachine
                     }
                     else
                     {
-                        string path = JavaHelper.ReadJavaString(pathField);
-                        HeapArray javaByteArr = (HeapArray)Heap.GetItem(byteArrAddr);
+                        string path = JavaHelper.ReadJavaString(pathFieldAddr);
+                        HeapArray javaByteArr = Heap.GetArray(byteArrAddr);
 
-                        FileStreams.WriteBytes(path, (byte[])javaByteArr.Array, offset, length, append);
+                        throw new NotImplementedException();
+                        //FileStreams.WriteBytes(path, (byte[])javaByteArr.Array, offset, length, append);
 
                         JavaHelper.ReturnVoid();
                         return;
                     }
 
-                    JavaHelper.ReturnVoid();
-                    return;
-                }
-                else if (className == "java/io/InputStreamReader" && nameAndDescriptor == ("<init>", "(Ljava/io/InputStream;)V"))
-                {
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -260,8 +257,8 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/io/WinNTFileSystem" && nameAndDescriptor == ("getBooleanAttributes", "(Ljava/io/File;)I"))
                 {
-                    ClassFile FileCFile = ClassFileManager.GetClassFile("java/io/File");
-                    MethodInfo getPathMethod = FileCFile.MethodDictionary[("getPath", "()Ljava/lang/String;")];
+                    ClassFile fileCFile = ClassFileManager.GetClassFile("java/io/File");
+                    MethodInfo getPathMethod = fileCFile.MethodDictionary[("getPath", "()Ljava/lang/String;")];
                     JavaHelper.RunJavaFunction(getPathMethod, Args[1]);
                     string path = JavaHelper.ReadJavaString(Utility.PopInt(Stack, ref sp));
 
@@ -293,7 +290,7 @@ namespace JavaVirtualMachine
                     string classToLoadName = JavaHelper.ReadJavaString(Args[0]).Replace('.', '/');
                     int classObjAddr = ClassObjectManager.GetClassObjectAddr(classToLoadName);
 
-                    ClassFileManager.GetClassFile(classToLoadName);
+                    ClassFileManager.GetClassFileIndex(classToLoadName);
                     if (Args[1] == 1)
                     {
                         ClassFileManager.InitializeClass(classToLoadName);
@@ -324,7 +321,8 @@ namespace JavaVirtualMachine
                 {
                     ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ClassObjectName(obj));
 
-                    ClassFile constructorClassFile = ClassFileManager.GetClassFile("java/lang/reflect/Constructor");
+                    int constructorClassFileIdx = ClassFileManager.GetClassFileIndex("java/lang/reflect/Constructor");
+                    ClassFile constructorClassFile = ClassFileManager.ClassFiles[constructorClassFileIdx];
                     MethodInfo constructorConstructor = constructorClassFile.MethodDictionary[("<init>", "(Ljava/lang/Class;[Ljava/lang/Class;[Ljava/lang/Class;IILjava/lang/String;[B[B)V")];
 
                     LinkedList<int> constructorObjLinkedList = new LinkedList<int>();
@@ -351,7 +349,7 @@ namespace JavaVirtualMachine
                                     parameterTypes[j] = ClassObjectManager.GetClassObjectAddr(parameterDescriptors[j]);
                                 }
                             }
-                            int parameterTypesArrayAddr = Heap.AddItem(new HeapArray(parameterTypes, ClassObjectManager.GetClassObjectAddr("java/lang/Class")));
+                            int parameterTypesArrayAddr = Heap.CreateArray(parameterTypes, ClassObjectManager.GetClassObjectAddr("java/lang/Class"));
 
                             int checkedExceptionsArrayAddr = 0;
                             if (method.ExceptionsAttribute != null)
@@ -362,7 +360,7 @@ namespace JavaVirtualMachine
                                 {
                                     checkedExceptions[j] = ClassObjectManager.GetClassObjectAddr(ExceptionsTable[j].Name);
                                 }
-                                checkedExceptionsArrayAddr = Heap.AddItem(new HeapArray(checkedExceptions, ClassObjectManager.GetClassObjectAddr("Ljava/lang/Class")));
+                                checkedExceptionsArrayAddr = Heap.CreateArray(checkedExceptions, ClassObjectManager.GetClassObjectAddr("Ljava/lang/Class"));
                             }
 
                             int modifiers = method.AccessFlags;
@@ -372,7 +370,7 @@ namespace JavaVirtualMachine
                             string signature = descriptor;
                             int signatureObjAddr = JavaHelper.CreateJavaStringLiteral(signature);
 
-                            int constructorObj = Heap.AddItem(new HeapObject(constructorClassFile));
+                            int constructorObj = Heap.CreateObject(constructorClassFileIdx);
 
                             if (method.RawAnnotations == null)
                             {
@@ -407,8 +405,8 @@ namespace JavaVirtualMachine
                             int annotationsArrayAddr = 0;
                             if (method.RawAnnotations.Length > 0)
                             {
-                                HeapArray rawAnnotationsArray = new HeapArray(method.RawAnnotations, ClassObjectManager.GetClassObjectAddr("B"));
-                                annotationsArrayAddr = Heap.AddItem(rawAnnotationsArray);
+                                int[] intArr = method.RawAnnotations.Select(x => (int)x).ToArray();
+                                annotationsArrayAddr = Heap.CreateArray(intArr, ClassObjectManager.GetClassObjectAddr("B"));
                             }
 
                             if (method.RawParameterAnnotations == null)
@@ -431,8 +429,8 @@ namespace JavaVirtualMachine
                             int parameterAnnotationsArrayAddr = 0;
                             if (method.RawParameterAnnotations.Length > 0)
                             {
-                                HeapArray rawParameterAnnotationsArray = new HeapArray(method.RawParameterAnnotations, ClassObjectManager.GetClassObjectAddr("B"));
-                                parameterAnnotationsArrayAddr = Heap.AddItem(rawParameterAnnotationsArray);
+                                int[] intArr = method.RawParameterAnnotations.Select(x => (int)x).ToArray();
+                                parameterAnnotationsArrayAddr = Heap.CreateArray(intArr, ClassObjectManager.GetClassObjectAddr("B"));
                             }
 
                             JavaHelper.RunJavaFunction(constructorConstructor, constructorObj,
@@ -452,8 +450,8 @@ namespace JavaVirtualMachine
                     int[] constructorObjAddresses = new int[constructorObjLinkedList.Count];
                     constructorObjLinkedList.CopyTo(constructorObjAddresses, 0);
 
-                    HeapArray constructorObjArrayObj = new HeapArray(constructorObjAddresses, ClassObjectManager.GetClassObjectAddr("Ljava/lang/reflect/Constructor;"));
-                    JavaHelper.ReturnValue(Heap.AddItem(constructorObjArrayObj));
+                    int constructorObjArrayAddr = Heap.CreateArray(constructorObjAddresses, ClassObjectManager.GetClassObjectAddr("Ljava/lang/reflect/Constructor;"));
+                    JavaHelper.ReturnValue(constructorObjArrayAddr);
                     return;
 
                 }
@@ -477,9 +475,8 @@ namespace JavaVirtualMachine
                     {
                         length = cFile.FieldsInfo.Length;
                     }
-                    HeapArray fields = new HeapArray(new int[length], ClassObjectManager.GetClassObjectAddr("Ljava/lang/reflect/Field;"));
-                    int fieldsArrAddr = Heap.AddItem(fields);
-                    int index = 0;
+
+                    int[] fields = new int[length];
                     int instanceSlot = 0;
                     int staticSlot = 0;
                     for (int i = 0; i < cFile.FieldsInfo.Length; i++)
@@ -489,10 +486,11 @@ namespace JavaVirtualMachine
                             continue;
                         }
                         FieldInfo fieldInfo = cFile.FieldsInfo[i];
-                        HeapObject field = new HeapObject(ClassFileManager.GetClassFile("java/lang/reflect/Field"));
-                        int fieldAddr = Heap.AddItem(field);
+                        int fieldCFileIdx = ClassFileManager.GetClassFileIndex("java/lang/reflect/Field");
+                        ClassFile fieldCFile = ClassFileManager.ClassFiles[fieldCFileIdx];
+                        int fieldAddr = Heap.CreateObject(fieldCFileIdx);
 
-                        MethodInfo initMethod = field.ClassFile.MethodDictionary[("<init>", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;IILjava/lang/String;[B)V")];
+                        MethodInfo initMethod = fieldCFile.MethodDictionary[("<init>", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;IILjava/lang/String;[B)V")];
 
                         string type;
                         if (fieldInfo.Descriptor.Length == 1)
@@ -520,9 +518,10 @@ namespace JavaVirtualMachine
                                                             new FieldReferenceValue(JavaHelper.CreateJavaStringLiteral(fieldInfo.Descriptor)).Address,
                                                             0);
 
-                        ((int[])fields.Array)[index] = fieldAddr;
-                        fields.SetItem(index++, fieldAddr);
+                        fields[i] = fieldAddr;
                     }
+
+                    int fieldsArrAddr = Heap.CreateArray(fields, ClassObjectManager.GetClassObjectAddr("Ljava/lang/reflect/Field;"));
                     JavaHelper.ReturnValue(fieldsArrAddr);
                     return;
                 }
@@ -599,7 +598,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("getSuperclass", "()Ljava/lang/Class;"))
                 {
-                    string descriptor = JavaHelper.ReadJavaString((FieldReferenceValue)obj.GetField(2));
+                    string descriptor = JavaHelper.ReadJavaString(obj.GetField(2));
                     if (descriptor == "java.lang.Object" || descriptor.Length == 1 || obj.ClassFile.IsInterface())
                     {
                         JavaHelper.ReturnValue(0);
@@ -623,8 +622,10 @@ namespace JavaVirtualMachine
                     {
                         JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                     }
-                    ClassFile thisCFile = ClassFileManager.GetClassFile(Args[0]);
-                    ClassFile otherCFile = ClassFileManager.GetClassFile(Args[1]);
+                    int thisCFileIdx = ClassFileManager.GetClassFileIndex(Args[0]);
+                    int otherCFileIdx = ClassFileManager.GetClassFileIndex(Args[1]);
+                    ClassFile thisCFile = ClassFileManager.ClassFiles[thisCFileIdx];
+                    ClassFile otherCFile = ClassFileManager.ClassFiles[otherCFileIdx];
                     bool assignable = JavaHelper.IsSubClassOf(otherCFile, thisCFile);
                     JavaHelper.ReturnValue(assignable ? 1 : 0);
                     return;
@@ -637,8 +638,8 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Class" && nameAndDescriptor == ("isInterface", "()Z"))
                 {
-                    FieldReferenceValue name = (FieldReferenceValue)obj.GetField("name", "Ljava/lang/String;");
-                    ClassFile cFile = ClassFileManager.GetClassFile(JavaHelper.ReadJavaString(name));
+                    string name = JavaHelper.ReadJavaString(obj.GetField("name", "Ljava/lang/String;"));
+                    ClassFile cFile = ClassFileManager.GetClassFile(name);
                     JavaHelper.ReturnValue(cFile.IsInterface() ? 1 : 0);
                     return;
                 }
@@ -685,9 +686,9 @@ namespace JavaVirtualMachine
                 else if (className == "java/lang/ClassLoader$NativeLibrary" && nameAndDescriptor == ("load", "(Ljava/lang/String;Z)V"))
                 {
                     ClassFile classLoaderCFile = ClassFileManager.GetClassFile("java/lang/ClassLoader");
-                    int systemNativeLibrariesRef = ((FieldReferenceValue)classLoaderCFile.StaticFieldsDictionary[("systemNativeLibraries", "Ljava/util/Vector;")]).Address;
+                    int systemNativeLibrariesRef = (int)classLoaderCFile.StaticFieldsDictionary[("systemNativeLibraries", "Ljava/util/Vector;")];
                     HeapObject systemNativeLibraries = Heap.GetObject(systemNativeLibrariesRef);
-                    int loadedLibraryNamesRef = ((FieldReferenceValue)classLoaderCFile.StaticFieldsDictionary[("loadedLibraryNames", "Ljava/util/Vector;")]).Address;
+                    int loadedLibraryNamesRef = (int)classLoaderCFile.StaticFieldsDictionary[("loadedLibraryNames", "Ljava/util/Vector;")];
                     HeapObject loadedLibraryNames = Heap.GetObject(loadedLibraryNamesRef);
 
                     ClassFile vectorCFile = ClassFileManager.GetClassFile("java/util/Vector");
@@ -696,7 +697,7 @@ namespace JavaVirtualMachine
                     JavaHelper.RunJavaFunction(addItemToVector, systemNativeLibrariesRef, Args[0]);
                     JavaHelper.RunJavaFunction(addItemToVector, loadedLibraryNamesRef, Args[1]);
 
-                    obj.SetField("loaded", "Z", new FieldNumber(1));
+                    obj.SetField("loaded", "Z", 1);
 
                     JavaHelper.ReturnVoid();
                     return;
@@ -723,7 +724,7 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/invoke/MethodHandleNatives" && nameAndDescriptor == ("getConstant", "(I)I"))
                 {
-                    if(Args[0] == 0) //MethodHandlePushLimit
+                    if (Args[0] == 0) //MethodHandlePushLimit
                     {
                         JavaHelper.ReturnValue(0);
                         return;
@@ -739,38 +740,34 @@ namespace JavaVirtualMachine
                     JavaHelper.ReturnVoid();
                     return;
                 }
-                else if(className == "java/lang/invoke/MethodHandleNatives" && nameAndDescriptor == ("resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/MemberName;"))
+                else if (className == "java/lang/invoke/MethodHandleNatives" && nameAndDescriptor == ("resolve", "(Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/MemberName;"))
                 {
                     throw new NotImplementedException();
                     HeapObject self = Heap.GetObject(Args[0]);
                     HeapObject caller = Heap.GetObject(Args[1]);
 
-                    FieldReferenceValue classField = (FieldReferenceValue)self.GetField(0);
-                    string methodClass = JavaHelper.ClassObjectName(classField.Address);
-                    FieldReferenceValue nameField = (FieldReferenceValue)self.GetField(1);
-                    string name = JavaHelper.ReadJavaString(nameField);
+                    int classFieldAddr = self.GetField(0);
+                    string methodClass = JavaHelper.ClassObjectName(classFieldAddr);
+                    int nameFieldAddr = self.GetField(1);
+                    string name = JavaHelper.ReadJavaString(nameFieldAddr);
 
-                    HeapObject methodType = Heap.GetObject(((FieldReferenceValue)self.GetField("type", "Ljava/lang/Object;")).Address);
-                    HeapObject returnType = Heap.GetObject(((FieldReferenceValue)methodType.GetField("rtype", "Ljava/lang/Class;")).Address);
-                    HeapArray parameterTypes = Heap.GetArray(((FieldReferenceValue)methodType.GetField("ptypes", "[Ljava/lang/Class;")).Address);
+                    HeapObject methodType = Heap.GetObject(self.GetField("type", "Ljava/lang/Object;"));
+                    HeapObject returnType = Heap.GetObject(methodType.GetField("rtype", "Ljava/lang/Class;"));
+                    HeapArray parameterTypes = Heap.GetArray(methodType.GetField("ptypes", "[Ljava/lang/Class;"));
 
                     string descriptor = JavaHelper.MakeDescriptor(returnType, parameterTypes);
 
-                    MethodInfo method = ClassFileManager.GetClassFile(methodClass).MethodDictionary[(name, descriptor)];
+                    int cFileIdx = ClassFileManager.GetClassFileIndex(methodClass);
+                    MethodInfo method = ClassFileManager.ClassFiles[cFileIdx].MethodDictionary[(name, descriptor)];
 
-                    int flags = ((FieldNumber)self.GetField("flags", "I")).Value;
-                    if(method.HasFlag(MethodInfoFlag.Static))
+                    int flags = self.GetField("flags", "I");
+                    if (method.HasFlag(MethodInfoFlag.Static))
                     {
 
                     }
 
 
                     JavaHelper.ReturnValue(Args[0]);
-                    return;
-                }
-                else if (className == "java/lang/Object" && nameAndDescriptor == ("<init>", "()V"))
-                {
-                    JavaHelper.ReturnVoid();
                     return;
                 }
                 else if (className == "java/lang/Object" && nameAndDescriptor == ("clone", "()Ljava/lang/Object;"))
@@ -784,15 +781,7 @@ namespace JavaVirtualMachine
                      * {@code x.clone().getClass() == x.getClass()}.
                      * 
                      */
-
-                    if (obj is HeapArray originalArr)
-                    {
-                        JavaHelper.ReturnValue(Heap.AddItem(originalArr.Clone()));
-                    }
-                    else
-                    {
-                        JavaHelper.ReturnValue(Heap.AddItem(obj.Clone()));
-                    }
+                    JavaHelper.ReturnValue(Heap.CloneObject(Args[0]));
                     return;
                 }
                 else if (className == "java/lang/Object" && nameAndDescriptor == ("getClass", "()Ljava/lang/Class;"))
@@ -800,8 +789,8 @@ namespace JavaVirtualMachine
                     if (obj is HeapArray arr)
                     {
                         int itemTypeAddr = arr.ItemTypeClassObjAddr;
-                        FieldReferenceValue nameField = (FieldReferenceValue)(Heap.GetObject(itemTypeAddr)).GetField("name", "Ljava/lang/String;");
-                        string itemTypeName = JavaHelper.ReadJavaString(nameField);
+                        int nameAddr = Heap.GetObject(itemTypeAddr).GetField("name", "Ljava/lang/String;");
+                        string itemTypeName = JavaHelper.ReadJavaString(nameAddr);
                         string arrName = '[' + itemTypeName;
                         JavaHelper.ReturnValue(ClassObjectManager.GetClassObjectAddr(arrName));
                     }
@@ -834,8 +823,7 @@ namespace JavaVirtualMachine
                     int typeClassObjAddr = Args[0];
                     int length = Args[1];
                     if (length < 0) JavaHelper.ThrowJavaException("java/lang/NegativeArraySizeException");
-                    HeapArray newArr = new HeapArray(new int[length], typeClassObjAddr);
-                    JavaHelper.ReturnValue(Heap.AddItem(newArr));
+                    JavaHelper.ReturnValue(Heap.CreateArray(4, length, typeClassObjAddr));
                     return;
                 }
                 else if (className == "java/lang/Runtime" && nameAndDescriptor == ("availableProcessors", "()I"))
@@ -845,17 +833,31 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/String" && nameAndDescriptor == ("intern", "()Ljava/lang/String;"))
                 {
-                    JavaHelper.ReturnValue(StringPool.Intern(Args[0]));
+                    string str = JavaHelper.ReadJavaString(Args[0]);
+                    if (StringPool.StringAddresses.TryGetValue(str, out int strAddr))
+                    {
+                        JavaHelper.ReturnValue(strAddr);
+                    }
+                    else
+                    {
+                        StringPool.StringAddresses.Add(str, Args[0]);
+                        JavaHelper.ReturnValue(Args[0]);
+                    }
                     return;
                 }
                 else if (className == "java/lang/System" && nameAndDescriptor == ("arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V"))
                 {
-                    HeapArray srcArr = (HeapArray)Heap.GetItem(Args[0]);
+                    HeapArray srcArr = Heap.GetArray(Args[0]);
                     int srcStartInd = Args[1];
-                    HeapArray destArr = (HeapArray)Heap.GetItem(Args[2]);
+                    HeapArray destArr = Heap.GetArray(Args[2]);
                     int destStartInd = Args[3];
                     int count = Args[4];
-                    Array.Copy(srcArr.Array, srcStartInd, destArr.Array, destStartInd, count);
+
+                    int itemSize = srcArr.ItemSize;
+                    int numBytes = count * srcArr.ItemSize;
+                    Span<byte> srcSpan = srcArr.GetDataSpan().Slice(itemSize * srcStartInd, numBytes);
+                    Span<byte> destSpan = destArr.GetDataSpan().Slice(itemSize * destStartInd);
+                    srcSpan.CopyTo(destSpan);
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -927,29 +929,29 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/System" && nameAndDescriptor == ("registerNatives", "()V"))
                 {
-                    HeapObject printStream = new HeapObject(ClassFileManager.GetClassFile("java/io/PrintStream"));
-                    ClassFileManager.GetClassFile("java/lang/System").StaticFieldsDictionary[("out", "Ljava/io/PrintStream;")] = new FieldReferenceValue(Heap.AddItem(printStream));
+                    int printStreamAddr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/io/PrintStream"));
+                    ClassFileManager.GetClassFile("java/lang/System").StaticFieldsDictionary[("out", "Ljava/io/PrintStream;")] = printStreamAddr;
                     JavaHelper.ReturnVoid();
                     return;
                 }
                 else if (className == "java/lang/System" && nameAndDescriptor == ("setErr0", "(Ljava/io/PrintStream;)V"))
                 {
                     ClassFile systemClassFile = ClassFileManager.GetClassFile("java/lang/System");
-                    systemClassFile.StaticFieldsDictionary[("err", "Ljava/io/PrintStream;")] = new FieldReferenceValue(Args[0]);
+                    systemClassFile.StaticFieldsDictionary[("err", "Ljava/io/PrintStream;")] = Args[0];
                     JavaHelper.ReturnVoid();
                     return;
                 }
                 else if (className == "java/lang/System" && nameAndDescriptor == ("setIn0", "(Ljava/io/InputStream;)V"))
                 {
                     ClassFile systemClassFile = ClassFileManager.GetClassFile("java/lang/System");
-                    systemClassFile.StaticFieldsDictionary[("in", "Ljava/io/InputStream;")] = new FieldReferenceValue(Args[0]);
+                    systemClassFile.StaticFieldsDictionary[("in", "Ljava/io/InputStream;")] = Args[0];
                     JavaHelper.ReturnVoid();
                     return;
                 }
                 else if (className == "java/lang/System" && nameAndDescriptor == ("setOut0", "(Ljava/io/PrintStream;)V"))
                 {
                     ClassFile systemClassFile = ClassFileManager.GetClassFile("java/lang/System");
-                    systemClassFile.StaticFieldsDictionary[("out", "Ljava/io/PrintStream;")] = new FieldReferenceValue(Args[0]);
+                    systemClassFile.StaticFieldsDictionary[("out", "Ljava/io/PrintStream;")] = Args[0];
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -960,8 +962,8 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Thread" && nameAndDescriptor == ("isAlive", "()Z"))
                 {
-                    FieldNumber threadStatus = (FieldNumber)obj.GetField("threadStatus", "I");
-                    if (threadStatus.Value == 0)
+                    int threadStatus = obj.GetField("threadStatus", "I");
+                    if (threadStatus == 0)
                     {
                         JavaHelper.ReturnValue(0);
                         return;
@@ -973,8 +975,8 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Thread" && nameAndDescriptor == ("isInterrupted", "(Z)Z"))
                 {
-                    FieldNumber threadStatus = (FieldNumber)obj.GetField("threadStatus", "I");
-                    if (threadStatus.Value == 2)
+                    int threadStatus = obj.GetField("threadStatus", "I");
+                    if (threadStatus == 2)
                     {
                         JavaHelper.ReturnValue(1);
                         return;
@@ -997,8 +999,8 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "java/lang/Thread" && nameAndDescriptor == ("start0", "()V"))
                 {
-                    FieldReferenceValue target = (FieldReferenceValue)obj.GetField("target", "Ljava/lang/Runnable;");
-                    if (target.Address == 0)
+                    int targetAddr = obj.GetField("target", "Ljava/lang/Runnable;");
+                    if (targetAddr == 0)
                     {
                         JavaHelper.ReturnVoid();
                         return;
@@ -1020,9 +1022,9 @@ namespace JavaVirtualMachine
                 {
                     int index = Args[1];
 
-                    ClassFile stackTraceElementCFile = ClassFileManager.GetClassFile("java/lang/StackTraceElement");
-                    HeapObject stackTraceElement = new HeapObject(stackTraceElementCFile);
-                    int objAddr = Heap.AddItem(stackTraceElement);
+                    int stackTraceElementCFileIdx = ClassFileManager.GetClassFileIndex("java/lang/StackTraceElement");
+                    ClassFile stackTraceElementCFile = ClassFileManager.ClassFiles[stackTraceElementCFileIdx];
+                    int objAddr = Heap.CreateObject(stackTraceElementCFileIdx);
 
                     MethodInfo constructor = stackTraceElementCFile.MethodDictionary[("<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V")];
 
@@ -1084,15 +1086,15 @@ namespace JavaVirtualMachine
                     MethodInfo constructor = inet6AddressCFile.MethodDictionary[("<init>", "()V")];
 
                     int[] innerArray = new int[addresses.Length];
-                    HeapArray javaAddressesArray = new HeapArray(innerArray, ClassObjectManager.GetClassObjectAddr("java/net/Inet6Address"));
-                    int arrayAddr = Heap.AddItem(javaAddressesArray);
 
                     for (int i = 0; i < addresses.Length; i++)
                     {
-                        int newObjAddr = Heap.AddItem(new HeapObject(inet6AddressCFile));
+                        int newObjAddr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/net/Inet6Address"));
                         innerArray[i] = newObjAddr;
                         JavaHelper.RunJavaFunction(constructor, newObjAddr);
                     }
+
+                    int arrayAddr = Heap.CreateArray(innerArray, ClassObjectManager.GetClassObjectAddr("java/net/Inet6Address"));
 
                     JavaHelper.ReturnValue(arrayAddr);
                     return;
@@ -1234,14 +1236,14 @@ namespace JavaVirtualMachine
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("arrayBaseOffset", "(Ljava/lang/Class;)I"))
                 {
                     //Returns offset of addr of first element from the addr of the array (bytes)
-                    JavaHelper.ReturnValue(HeapArray.ArrayBaseOffset);
+                    JavaHelper.ReturnValue(Heap.ArrayBaseOffset);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("arrayIndexScale", "(Ljava/lang/Class;)I"))
                 {
                     //returns num of bytes
                     HeapObject classObject = Heap.GetObject(Args[1]);
-                    string itemDescriptor = JavaHelper.ReadJavaString((FieldReferenceValue)classObject.GetField("name", "Ljava/lang/String;")).Substring(1);
+                    string itemDescriptor = JavaHelper.ReadJavaString(classObject.GetField("name", "Ljava/lang/String;")).Substring(1);
                     if (itemDescriptor == "D" || itemDescriptor == "J") JavaHelper.ReturnValue(8);
                     else JavaHelper.ReturnValue(4);
 
@@ -1252,97 +1254,60 @@ namespace JavaVirtualMachine
                     // Sets first object to x if it currently equals excpected
                     // Returns true if set, false if not set
 
-                    HeapObject o = Heap.GetObject(Args[1]);
+                    int objAddr = Args[1];
                     long offset = Utility.ToLong((Args[2], Args[3]));
                     int expected = Args[4];
-                    int x = Args[5];
-                    if (o is HeapArray arr)
+                    int newVal = Args[5];
+
+                    int oldVal = Heap.GetInt(objAddr + (int)offset);
+                    if (oldVal == expected)
                     {
-                        if (arr.GetItemDataByOffset(offset) == expected)
-                        {
-                            ((int[])arr.Array)[(offset - HeapArray.ArrayBaseOffset) / arr.ItemSize] = x;
-                            arr.SetItemByOffset(offset, x);
-                            JavaHelper.ReturnValue(1);
-                            return;
-                        }
-                        JavaHelper.ReturnValue(0);
-                        return;
+                        Heap.PutInt(objAddr + (int)offset, newVal);
+                        JavaHelper.ReturnValue(1);
                     }
                     else
                     {
-                        FieldReferenceValue field = (FieldReferenceValue)o.GetFieldByOffset(offset);
-                        if (field.Address == expected)
-                        {
-                            o.SetFieldByOffset(offset, new FieldReferenceValue(x));
-                            JavaHelper.ReturnValue(1);
-                            return;
-                        }
                         JavaHelper.ReturnValue(0);
-                        return;
                     }
-
+                    return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("compareAndSwapInt", "(Ljava/lang/Object;JII)Z"))
                 {
-                    HeapObject o = Heap.GetObject(Args[1]);
+                    int objAddr = Args[1];
                     long offset = Utility.ToLong((Args[2], Args[3]));
                     int expected = Args[4];
-                    int x = Args[5];
-                    if (o is HeapArray arr)
+                    int newVal = Args[5];
+
+                    int oldVal = Heap.GetInt(objAddr + (int)offset);
+                    if (oldVal == expected)
                     {
-                        if (arr.GetItemDataByOffset(offset) == expected)
-                        {
-                            ((int[])arr.Array)[(offset - HeapArray.ArrayBaseOffset) / arr.ItemSize] = x;
-                            arr.SetItemByOffset(offset, x);
-                            JavaHelper.ReturnValue(1);
-                            return;
-                        }
-                        JavaHelper.ReturnValue(0);
-                        return;
+                        Heap.PutInt(objAddr + (int)offset, newVal);
+                        JavaHelper.ReturnValue(1);
                     }
                     else
                     {
-                        FieldNumber field = (FieldNumber)o.GetFieldByOffset(offset);
-                        if (field.Value == expected)
-                        {
-                            o.SetFieldByOffset(offset, new FieldNumber(x));
-                            JavaHelper.ReturnValue(1);
-                            return;
-                        }
                         JavaHelper.ReturnValue(0);
-                        return;
                     }
+                    return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("compareAndSwapLong", "(Ljava/lang/Object;JJJ)Z"))
                 {
-                    HeapObject o = Heap.GetObject(Args[1]);
+                    int objAddr = Args[1];
                     long offset = Utility.ToLong((Args[2], Args[3]));
                     long expected = Utility.ToLong((Args[4], Args[5]));
-                    long x = Utility.ToLong((Args[6], Args[7]));
-                    if (o is HeapArray arr)
+                    long newVal = Utility.ToLong((Args[6], Args[7]));
+
+                    long oldVal = Heap.GetLong(objAddr + (int)offset);
+                    if (oldVal == expected)
                     {
-                        if (arr.GetItemData((int)offset) == expected)
-                        {
-                            ((long[])arr.Array)[(offset - HeapArray.ArrayBaseOffset) / arr.ItemSize] = x;
-                            arr.SetItemByOffset(offset, x);
-                            JavaHelper.ReturnValue(1);
-                            return;
-                        }
-                        JavaHelper.ReturnValue(0);
-                        return;
+                        Heap.PutLong(objAddr + (int)offset, newVal);
+                        JavaHelper.ReturnValue(1);
                     }
                     else
                     {
-                        FieldLargeNumber field = (FieldLargeNumber)o.GetFieldByOffset(offset);
-                        if (field.Value == expected)
-                        {
-                            o.SetFieldByOffset(offset, new FieldLargeNumber(x));
-                            JavaHelper.ReturnValue(1);
-                            return;
-                        }
                         JavaHelper.ReturnValue(0);
-                        return;
                     }
+                    return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("copyMemory", "(Ljava/lang/Object;JLjava/lang/Object;JJ)V"))
                 {
@@ -1353,45 +1318,23 @@ namespace JavaVirtualMachine
                      * If the effective addresses and length are (resp.) even modulo 4 or 2,
                      * the transfer takes place in units of 'int' or 'short'.
                      */
-                    HeapObject srcObj = Heap.GetObject(Args[1]);
+                    int srcObjAddr = Args[1];
                     long srcOffset = Utility.ToLong((Args[2], Args[3]));
-                    HeapObject destObj = Heap.GetObject(Args[4]);
+                    int destObjAddr = Args[4];
                     long destOffset = Utility.ToLong((Args[5], Args[6]));
                     long numOfBytes = Utility.ToLong((Args[7], Args[8]));
 
-                    byte[] srcData;
-                    if (srcObj == null)
-                    {
-                        srcData = Heap.GetMemorySlice((int)srcOffset, (int)numOfBytes).ToArray();
-                    }
-                    else if (srcObj is HeapArray arr)
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
+                    Span<byte> srcSpan = Heap.GetSpan(srcObjAddr + (int)srcOffset, (int)numOfBytes);
+                    Span<byte> destSpan = Heap.GetSpan(destObjAddr + (int)destOffset, (int)numOfBytes);
+                    srcSpan.CopyTo(destSpan);
 
-                    if (destObj == null)
-                    {
-                        Heap.PutData(destOffset, srcData);
-                    }
-                    else if (destObj is HeapArray arr)
-                    {
-                        arr.SetDataByOffset(srcData, (int)destOffset, (int)numOfBytes);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
                     JavaHelper.ReturnVoid();
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("ensureClassInitialized", "(Ljava/lang/Class;)V"))
                 {
                     HeapObject cFileObj = Heap.GetObject(Args[1]);
-                    ClassFileManager.InitializeClass(JavaHelper.ReadJavaString((FieldReferenceValue)cFileObj.GetField(2)));
+                    ClassFileManager.InitializeClass(JavaHelper.ReadJavaString(cFileObj.GetField(2)));
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -1403,91 +1346,42 @@ namespace JavaVirtualMachine
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("getByte", "(J)B"))
                 {
                     long address = (Args[1], Args[2]).ToLong();
-                    byte value = Heap.GetMemorySlice((int)address, 1).ToArray()[0];
+                    byte value = Heap.GetByte((int)address);
                     JavaHelper.ReturnValue(value);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("getIntVolatile", "(Ljava/lang/Object;J)I"))
                 {
-                    //todo: volatile
-                    HeapObject o = Heap.GetObject(Args[1]);
+                    int baseAddr = Args[1];
                     long offset = Utility.ToLong((Args[2], Args[3]));
-                    if (o == null)
-                    {
-                        JavaHelper.ReturnValue(Heap.GetInt((int)offset));
-                    }
-                    else if (o is HeapArray arr)
-                    {
-                        int[] array = (int[])arr.Array;
-                        JavaHelper.ReturnValue(array[(offset - HeapArray.ArrayBaseOffset) / arr.ItemSize]); //offset is offset in memory, including array info before data
-                    }
-                    else
-                    {
-                        JavaHelper.ReturnValue(((FieldNumber)o.GetFieldByOffset(offset)).Value);
-                    }
+                    int val = Heap.GetInt(baseAddr + (int)offset);
+                    JavaHelper.ReturnValue(val);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("getLongVolatile", "(Ljava/lang/Object;J)J"))
                 {
-                    HeapObject o = Heap.GetObject(Args[1]);
+                    int baseAddr = Args[1];
                     long offset = Utility.ToLong((Args[2], Args[3]));
-                    if (o == null)
-                    {
-                        JavaHelper.ReturnLargeValue(Heap.GetLong((int)offset));
-                    }
-                    else if (o is HeapArray arr)
-                    {
-                        long[] array = (long[])arr.Array;
-                        JavaHelper.ReturnLargeValue(array[(offset - HeapArray.ArrayBaseOffset) / arr.ItemSize]); //offset is offset in memory, including array info before data
-                    }
-                    else
-                    {
-                        JavaHelper.ReturnLargeValue(((FieldLargeNumber)o.GetFieldByOffset(offset)).Value);
-                    }
+                    long val = Heap.GetLong(baseAddr + (int)offset);
+                    JavaHelper.ReturnLargeValue(val);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("getObjectVolatile", "(Ljava/lang/Object;J)Ljava/lang/Object;"))
                 {
                     //todo
                     //https://docs.oracle.com/javase/specs/jvms/se6/html/Threads.doc.html#22258
-                    int objAddr = Args[1];
-                    long offset = (Args[2], Args[3]).ToLong();
-                    HeapObject o = Heap.GetObject(objAddr);
-
-                    if (o == null)
-                    {
-                        JavaHelper.ReturnValue((int)offset); //return heap object at address of offset
-                    }
-                    else if (o is HeapArray arr)
-                    {
-                        JavaHelper.ReturnValue(arr.GetItemDataByOffset(offset)); //offset is offset in memory, including array info before data
-                    }
-                    else
-                    {
-                        JavaHelper.ReturnValue(((FieldReferenceValue)o.GetFieldByOffset(offset)).Address);
-                    }
+                    int baseAddr = Args[1];
+                    long offset = Utility.ToLong((Args[2], Args[3]));
+                    int val = Heap.GetInt(baseAddr + (int)offset);
+                    JavaHelper.ReturnValue(val);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("putObjectVolatile", "(Ljava/lang/Object;JLjava/lang/Object;)V"))
                 {
-                    int objAddr = Args[1];
-                    long offset = (Args[2], Args[3]).ToLong();
+                    int baseAddr = Args[1];
+                    long offset = Utility.ToLong((Args[2], Args[3]));
                     int objToStoreAddr = Args[4];
-
-                    HeapObject objToStoreIn = Heap.GetObject(objAddr);
-
-                    if (objToStoreIn == null)
-                    {
-                        Heap.PutLong(offset, objToStoreAddr);
-                    }
-                    else if (objToStoreIn is HeapArray arr)
-                    {
-                        arr.SetItemByOffset(offset, objToStoreAddr);
-                    }
-                    else
-                    {
-                        objToStoreIn.SetFieldByOffset(offset, new FieldReferenceValue(objToStoreAddr));
-                    }
+                    Heap.PutInt(baseAddr + (int)offset, objToStoreAddr);
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -1495,8 +1389,9 @@ namespace JavaVirtualMachine
                 {
                     HeapObject fieldObj = Heap.GetObject(Args[1]);
                     //HeapObject classObj = Heap.GetObject(((FieldReferenceValue)fieldObj.GetField("clazz", "Ljava/lang/Class;")).Address);
-                    int slot = ((FieldNumber)fieldObj.GetField("slot", "I")).Value;
-                    JavaHelper.ReturnLargeValue((HeapObject.FieldOffset + HeapObject.FieldSize * slot));
+                    int slot = fieldObj.GetField("slot", "I");
+                    int offset = Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot;
+                    JavaHelper.ReturnLargeValue(offset);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("pageSize", "()I"))
@@ -1508,8 +1403,7 @@ namespace JavaVirtualMachine
                 {
                     long address = (Args[1], Args[2]).ToLong();
                     long value = (Args[3], Args[4]).ToLong();
-                    Memory<byte> slice = Heap.GetMemorySlice((int)address, 8);
-                    value.AsByteArray().CopyTo(slice);
+                    Heap.PutLong((int)address, value);
                     JavaHelper.ReturnVoid();
                     return;
                 }
@@ -1520,25 +1414,12 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("setMemory", "(Ljava/lang/Object;JJB)V"))
                 {
-                    HeapObject o = Heap.GetObject(Args[1]);
+                    int objAddr = Args[1];
                     long offset = Utility.ToLong((Args[2], Args[3]));
                     long bytes = Utility.ToLong((Args[4], Args[5]));
                     byte value = (byte)Args[6];
-                    if (o == null)
-                    {
-                        Heap.Fill(offset, bytes, value);
-                        JavaHelper.ReturnVoid();
-                    }
-                    else if (o is HeapArray arr)
-                    {
-                        throw new NotImplementedException();
-                        long[] array = (long[])arr.Array;
-                        long index = (offset - HeapArray.ArrayBaseOffset) / arr.ItemSize;
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
+
+                    Heap.Fill(objAddr + (int)offset, bytes, value);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("staticFieldBase", "(Ljava/lang/reflect/Field;)Ljava/lang/Object;"))
@@ -1550,10 +1431,9 @@ namespace JavaVirtualMachine
                 {
                     HeapObject fieldObject = Heap.GetObject(Args[1]);
 
-                    FieldValue slotFieldVal = fieldObject.GetField("slot", "I");
-                    int slot = ((FieldNumber)slotFieldVal).Value;
+                    int slot = fieldObject.GetField("slot", "I");
 
-                    JavaHelper.ReturnLargeValue(HeapObject.FieldSize * slot);
+                    JavaHelper.ReturnLargeValue(Heap.ObjectFieldSize * slot);
                     return;
                 }
                 else if (className == "sun/misc/URLClassPath" && nameAndDescriptor == ("getLookupCacheURLs", "(Ljava/lang/ClassLoader;)[Ljava/net/URL;"))
@@ -1573,12 +1453,15 @@ namespace JavaVirtualMachine
                 }
                 else if (className == "sun/nio/ch/FileDispatcherImpl" && nameAndDescriptor == ("read0", "(Ljava/io/FileDescriptor;JI)I"))
                 {
-                    HeapObject fileDescriptor = Heap.GetObject(Args[0]);
-                    if (fileDescriptor == null) JavaHelper.ThrowJavaException("java/io/IOException");
+                    int fileDescriptorAddr = Args[0];
                     long address = (Args[1], Args[2]).ToLong(); //Memory address to write to
                     int length = Args[3];
-                    HeapObject parent = Heap.GetObject(((FieldReferenceValue)fileDescriptor.GetField("parent", "Ljava/io/Closeable;")).Address);
-                    string path = JavaHelper.ReadJavaString((FieldReferenceValue)parent.GetField("path", "Ljava/lang/String;"));
+
+                    if (fileDescriptorAddr == 0) JavaHelper.ThrowJavaException("java/io/IOException");
+                    HeapObject fileDescriptor = Heap.GetObject(fileDescriptorAddr);
+
+                    HeapObject parent = Heap.GetObject(fileDescriptor.GetField("parent", "Ljava/io/Closeable;"));
+                    string path = JavaHelper.ReadJavaString(parent.GetField("path", "Ljava/lang/String;"));
 
                     if (FileStreams.AvailableBytes(path) == 0)
                     {
@@ -1587,8 +1470,8 @@ namespace JavaVirtualMachine
                     }
 
                     byte[] data = new byte[length];
-                    int ret = FileStreams.ReadBytes(path, data, 0, length);
-                    Heap.PutData(address, data);
+                    int ret = FileStreams.ReadBytes(path, data.AsSpan());
+                    Heap.PutData((int)address, data);
 
                     JavaHelper.ReturnValue(ret);
                     return;
@@ -1616,8 +1499,10 @@ namespace JavaVirtualMachine
                     JavaHelper.RunJavaFunction(getDeclaringClassMethod, constructorAddr);
                     int declaringClassClassObjAddr = Utility.PopInt(Stack, ref sp);
                     HeapObject declaringClassClassObj = Heap.GetObject(declaringClassClassObjAddr);
-                    FieldReferenceValue declaringClassName = (FieldReferenceValue)declaringClassClassObj.GetField("name", "Ljava/lang/String;");
-                    ClassFile declaringClass = ClassFileManager.GetClassFile(JavaHelper.ReadJavaString(declaringClassName));
+                    
+                    string declaringClassName = JavaHelper.ReadJavaString(declaringClassClassObj.GetField("name", "Ljava/lang/String;"));
+                    int declaringClassCFileIdx = ClassFileManager.GetClassFileIndex(declaringClassName);
+                    ClassFile declaringClass = ClassFileManager.ClassFiles[declaringClassCFileIdx];
 
                     //Get slot
                     MethodInfo getSlotMethod = constructorClassFile.MethodDictionary[("getSlot", "()I")];
@@ -1638,8 +1523,7 @@ namespace JavaVirtualMachine
                     }
 
                     //Create object
-                    HeapObject newObject = new HeapObject(declaringClass);
-                    int newObjectAddr = Heap.AddItem(newObject);
+                    int newObjectAddr = Heap.CreateObject(declaringClassCFileIdx);
 
                     //Copy arguments to arguments array
                     int[] arguments;
@@ -1649,11 +1533,11 @@ namespace JavaVirtualMachine
                     }
                     else
                     {
-                        HeapArray argsArr = (HeapArray)Heap.GetItem(argsArrAddr);
-                        int[] args = (int[])argsArr.Array;
-                        arguments = new int[args.Length + 1];
+                        HeapArray argsArr = Heap.GetArray(argsArrAddr);
+                        arguments = new int[argsArr.Length + 1];
                         arguments[0] = newObjectAddr;
-                        args.CopyTo(arguments, 1);
+                        Span<int> argsArrData = MemoryMarshal.Cast<byte, int>(argsArr.GetDataSpan());
+                        argsArrData.CopyTo(arguments.AsSpan(1));
                     }
 
                     //Run constructor
@@ -1675,7 +1559,7 @@ namespace JavaVirtualMachine
                 else if (className == "sun/reflect/Reflection" && nameAndDescriptor == ("getClassAccessFlags", "(Ljava/lang/Class;)I"))
                 {
                     HeapObject classObj = Heap.GetObject(Args[0]);
-                    string cFileName = JavaHelper.ReadJavaString(((FieldReferenceValue)classObj.GetField("name", "Ljava/lang/String;")).Address);
+                    string cFileName = JavaHelper.ReadJavaString(classObj.GetField("name", "Ljava/lang/String;"));
                     ClassFile cFile = ClassFileManager.GetClassFile(cFileName);
                     JavaHelper.ReturnValue(cFile.AccessFlags);
                     return;

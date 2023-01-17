@@ -107,23 +107,20 @@ namespace JavaVirtualMachine
         {
             return (((long)pair.high) << 32) | (pair.low & 0xFFFFFFFF);
         }
+
         public static (int high, int low) Split(this long value)
         {
             return ((int)(value >> 32), (int)(value & 0xFFFFFFFF));
         }
 
-        public static byte[] AsByteArray(this long value)
+        public static byte[] AsByteArray(this short value)
         {
-            byte[] array = new byte[sizeof(long) / sizeof(byte)];
-            for(int i = 0; i < array.Length; i++)
-            {
-                int shiftAmount = 8 * (array.Length - i - 1);
-                long shifted = value >> shiftAmount;
-
-                array[i] = (byte)(shifted & 0xFF);
-            }
+            byte[] array = new byte[sizeof(short) / sizeof(byte)];
+            array[0] = (byte)(value & 0xFF);
+            array[1] = (byte)((value >> 8) & 0xFF);
             return array;
         }
+
         public static byte[] AsByteArray(this int value)
         {
             byte[] array = new byte[sizeof(int) / sizeof(byte)];
@@ -132,9 +129,28 @@ namespace JavaVirtualMachine
                 int shiftAmount = 8 * (array.Length - i - 1);
                 long shifted = value >> shiftAmount;
 
-                array[i] = (byte)(shifted & 0xFF);
+                array[3 - i] = (byte)(shifted & 0xFF);
             }
             return array;
+        }
+
+        public static byte[] AsByteArray(this long value)
+        {
+            byte[] array = new byte[sizeof(long) / sizeof(byte)];
+            for (int i = 0; i < array.Length; i++)
+            {
+                int shiftAmount = 8 * (array.Length - i - 1);
+                long shifted = value >> shiftAmount;
+
+                array[7 - i] = (byte)(shifted & 0xFF);
+            }
+            return array;
+        }
+
+        public static short ToShort(this byte[] array)
+        {
+            if (array.Length != 2) throw new InvalidOperationException();
+            return (short)(array[1] << 8 | array[0]);
         }
 
         public static int ToInt(this byte[] array)
@@ -144,10 +160,11 @@ namespace JavaVirtualMachine
             for (int i = 0; i < sizeof(int) / sizeof(byte); i++)
             {
                 value <<= 8;
-                value |= array[i];
+                value |= array[3 - i];
             }
             return value;
         }
+
         public static long ToLong(this byte[] array)
         {
             if (array.Length != 8) throw new InvalidOperationException();
@@ -155,7 +172,7 @@ namespace JavaVirtualMachine
             for (int i = 0; i < sizeof(long) / sizeof(byte); i++)
             {
                 value <<= 8;
-                value |= array[i];
+                value |= array[7 - i];
             }
             return value;
         }

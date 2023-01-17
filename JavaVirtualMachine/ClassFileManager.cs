@@ -9,11 +9,15 @@ namespace JavaVirtualMachine
 {
     public static class ClassFileManager
     {
-        private static Dictionary<string, (string path, ClassFile classFile, bool isStaticLoaded)> classFiles;
-        private static string javaClassesFilePath;
+        private static Dictionary<string, (string path, int classFileIndex, bool isStaticLoaded)> StrToClassFileInfo;
+        private static List<ClassFile> _classFiles = new();
+        public static IReadOnlyList<ClassFile> ClassFiles => _classFiles;
+
+        private static string RuntimePath;
+
         public static void InitDictionary(string runtimePath, params string[] otherPaths)
         {
-            classFiles = new Dictionary<string, (string, ClassFile, bool)>();
+            StrToClassFileInfo = new Dictionary<string, (string, int, bool)>();
             foreach (string path in otherPaths)
             {
                 string[] files = Directory.GetFiles(path, "*.class", SearchOption.AllDirectories);
@@ -21,89 +25,101 @@ namespace JavaVirtualMachine
                 {
                     string fileName = filePath.Substring(path.Length);
                     fileName = fileName.Substring(0, fileName.Length - 6); //Remove ".class"
-                    classFiles.Add(fileName.Replace('\\', '/'), (path, null, false));
+                    StrToClassFileInfo.Add(fileName.Replace('\\', '/'), (path, -1, false));
                 }
             }
-            ClassFileManager.javaClassesFilePath = runtimePath;
+            RuntimePath = runtimePath;
         }
-        public static ClassFile GetClassFile(CClassInfo cClassInfo)
+
+        public static int GetClassFileIndex(CClassInfo cClassInfo)
         {
-            return GetClassFile(cClassInfo.Name);
+            return GetClassFileIndex(cClassInfo.Name);
         }
-        public static ClassFile GetClassFile(int classObjAddr)
+
+        public static int GetClassFileIndex(int classObjAddr)
         {
             HeapObject classObj = Heap.GetObject(classObjAddr);
-            FieldReferenceValue nameRef = (FieldReferenceValue)classObj.GetField(2);
-            string name = JavaHelper.ReadJavaString(nameRef);
-            return GetClassFile(name);
+            string name = JavaHelper.ReadJavaString(classObj.GetField(2));
+            return GetClassFileIndex(name);
         }
-        public static ClassFile GetClassFile(string key)
+
+        public static int GetClassFileIndex(string key)
         {
             if (key.Last() == ';')
                 key = key.Substring(1, key.Length - 2);
             key = key.Replace('.', '/');
 
             //todo: check permissions
-            classFiles.TryGetValue(key, out (string path, ClassFile classFile, bool isStaticLoaded) classFileEntry);
 
             try
             {
-                if (classFileEntry.path == null)
+                if (StrToClassFileInfo.TryGetValue(key, out (string path, int classFileIndex, bool isStaticLoaded) classFileEntry))
                 {
-                    //Java class file
-                    string filePath = javaClassesFilePath + key + ".class";
-                    classFiles.Add(key, (javaClassesFilePath, new ClassFile(filePath), false));
-                    return classFiles[key].classFile;
+                    bool isLoaded = classFileEntry.classFileIndex != -1;
+                    if (!isLoaded)
+                    {
+                        ClassFile classFile = new ClassFile(StrToClassFileInfo[key].path + key + ".class");
+                        _classFiles.Add(classFile);
+
+                        int index = _classFiles.Count - 1;
+                        StrToClassFileInfo[key] = (RuntimePath, index, false);
+                        return index;
+                    }
+                    else
+                    {
+                        return classFileEntry.classFileIndex;
+                    }
                 }
                 else
                 {
-                    bool isNull = classFileEntry.classFile == null;
-                    if (isNull)
-                    {
-                        classFiles[key] = (classFiles[key].path, new ClassFile(classFiles[key].path + key + ".class"), false);
-                    }
-                    return classFiles[key].classFile;
-                }
+                    //Java class file
+                    string filePath = RuntimePath + key + ".class";
+                    ClassFile classFile = new ClassFile(filePath);
+                    _classFiles.Add(classFile);
 
+                    int index = _classFiles.Count - 1;
+                    StrToClassFileInfo.Add(key, (RuntimePath, index, false));
+                    return index;
+                }
             }
             catch (DirectoryNotFoundException)
             {
-                ClassFile exceptionClassFile = GetClassFile("java/lang/ClassNotFoundException");
-                HeapObject exception = new HeapObject(exceptionClassFile);
-                MethodInfo initMethodInfo = exceptionClassFile.MethodDictionary[("<init>", "(Ljava/lang/String;)V")];
-                int exceptionAddr = Heap.AddItem(exception);
+                int exCFileIdx = GetClassFileIndex("java/lang/ClassNotFoundException");
+                int exAddr = Heap.CreateObject(exCFileIdx);
+                ClassFile exCFile = ClassFiles[exCFileIdx];
+
+                MethodInfo initMethodInfo = exCFile.MethodDictionary[("<init>", "(Ljava/lang/String;)V")];
                 int messageAddr = JavaHelper.CreateJavaStringLiteral($"Could not find class {key}");
-                JavaHelper.RunJavaFunction(initMethodInfo, exceptionAddr, messageAddr);
+                JavaHelper.RunJavaFunction(initMethodInfo, exAddr, messageAddr);
                 if (Program.MethodFrameStack.Count > 0)
                 {
                     MethodFrame parentFrame = Program.MethodFrameStack.Peek();
-                    Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, exceptionAddr); //push address of exception onto parent stack
+                    Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, exAddr); //push address of exception onto parent stack
                 }
-                throw new JavaException(exception.ClassFile, $"Could not find class {key}");
+                throw new JavaException(exCFile, $"Could not find class {key}");
             }
         }
+
+        public static ClassFile GetClassFile(string name)
+        {
+            return ClassFiles[GetClassFileIndex(name)];
+        }
+
         public static void InitializeClass(string key)
         {
-            if(key == "java/lang/ref/SoftReference")
-            {
-
-            }
             ClassFile cFile = GetClassFile(key);
             while (cFile != null)
             {
-                if (!classFiles[cFile.Name].isStaticLoaded)
+                if (!StrToClassFileInfo[cFile.Name].isStaticLoaded)
                 {
-                    classFiles[cFile.Name] = (classFiles[cFile.Name].path, cFile, true);
-                    if (classFiles[cFile.Name].classFile.MethodDictionary.TryGetValue(("<clinit>", "()V"), out MethodInfo classInitMethod))
+                    StrToClassFileInfo[cFile.Name] = (StrToClassFileInfo[cFile.Name].path, StrToClassFileInfo[cFile.Name].classFileIndex, true);
+                    
+                    if (cFile.MethodDictionary.TryGetValue(("<clinit>", "()V"), out MethodInfo classInitMethod))
                     {
                         JavaHelper.RunJavaFunction(classInitMethod);
                     }
                 }
                 cFile = cFile.SuperClass;
-                if(cFile != null && !classFiles[cFile.Name].isStaticLoaded && classFiles[cFile.Name].classFile.MethodDictionary.ContainsKey(("<clinit>", "()V")))
-                {
-
-                }
             }
         }
     }

@@ -1,115 +1,135 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Reflection;
 
 namespace JavaVirtualMachine
 {
     public class HeapArray : HeapObject
     {
-        public Array Array;
-        public int ItemTypeClassObjAddr;
-        public static int ArrayBaseOffset = 8;
-        private int itemSize;
-        public int ItemSize => itemSize;
-        public HeapArray(Array array, int itemTypeClassObjAddr) : base(ClassFileManager.GetClassFile("java/lang/Object"))
-        {
-            Array = array;
-            ItemTypeClassObjAddr = itemTypeClassObjAddr;
+        public int ItemSize { get; private set; }
+        public int Length => Heap.GetInt(Address + Heap.ArrayLengthOffset);
+        public int ItemTypeClassObjAddr => Heap.GetInt(Address + Heap.ArrayItemTypeOffset);
 
-            int doubleClassObject = ClassObjectManager.GetClassObjectAddr("double");
-            int longClassObject = ClassObjectManager.GetClassObjectAddr("long");
-            itemSize = itemTypeClassObjAddr == doubleClassObject || itemTypeClassObjAddr == longClassObject ? 8 : 4;
-            //data = new Memory<byte>(new byte[]);
-            NumOfBytes = 8 + 8 + itemSize * array.GetLength(0);
-            Address = Heap.AllocateMemory(NumOfBytes);
-            //ydata = Heap.GetMemorySlice(Address, size);
-            ((long)Array.GetLength(0)).AsByteArray().CopyTo(Heap.GetMemorySlice(Address + 8, 8));
-            //SetField("length", "I", );
-        }
-        public int GetLengthData()
+        public HeapArray(int address, int itemSize)
+            : base (address)
         {
-            int length = (int)Heap.GetMemorySlice(Address + 8, 8).ToArray().ToLong();
-            if (length != Array.GetLength(0))
-            {
-                throw new InvalidOperationException();
-            }
-            return length;
+            ItemSize = itemSize;
         }
+
+        public short GetItemDataByte(int index)
+        {
+            if (ItemSize != 1) throw new InvalidOperationException();
+
+            return Heap.GetShort(Address + Heap.ArrayBaseOffset + ItemSize * index);
+        }
+
+        public short GetItemDataShort(int index)
+        {
+            if (ItemSize != 2) throw new InvalidOperationException();
+
+            return Heap.GetShort(Address + Heap.ArrayBaseOffset + ItemSize * index);
+        }
+
         public int GetItemData(int index)
         {
-            if (itemSize == 8)
-            {
-                long itemData = Heap.GetMemorySlice(Address + 8 + 8 + itemSize * index, itemSize).ToArray().ToLong();
-                return (int)itemData;
-            }
-            else if (itemSize == 4)
-            {
-                int itemData = Heap.GetMemorySlice(Address + 8 + 8 + itemSize * index, itemSize).ToArray().ToInt();
-                return itemData;
-            }
-            else
-            {
-                throw new InvalidOperationException();
-            }
+            if (ItemSize != 4) throw new InvalidOperationException();
+
+            return Heap.GetInt(Address + Heap.ArrayBaseOffset + ItemSize * index);
         }
-        public int GetItemDataByOffset(long offset)
+
+        public long GetItemDataLong(int index)
         {
-            return GetItemData((int)((offset - ArrayBaseOffset) / itemSize));
+            if (ItemSize != 8) throw new InvalidOperationException();
+
+            return Heap.GetLong(Address + Heap.ArrayBaseOffset + ItemSize * index);
         }
+
+        public short GetItemDataByOffsetByte(int offset)
+        {
+            if (ItemSize != 1) throw new InvalidOperationException();
+
+            return Heap.GetByte(Address + offset);
+        }
+
+        public short GetItemDataByOffsetShort(int offset)
+        {
+            if (ItemSize != 2) throw new InvalidOperationException();
+
+            return Heap.GetShort(Address + offset);
+        }
+
+        public int GetItemDataByOffset(int offset)
+        {
+            if (ItemSize != 4) throw new InvalidOperationException();
+
+            return Heap.GetInt(Address + offset);
+        }
+
+        public long GetItemDataByOffsetLong(int offset)
+        {
+            if (ItemSize != 8) throw new InvalidOperationException();
+
+            return Heap.GetLong(Address + offset);
+        }
+
+        public void SetItem(int index, byte itemData)
+        {
+            if (ItemSize != 1) throw new InvalidOperationException();
+
+            Heap.PutByte(Address + Heap.ArrayBaseOffset + ItemSize * index, itemData);
+        }
+
+        public void SetItem(int index, short itemData)
+        {
+            if (ItemSize != 2) throw new InvalidOperationException();
+
+            Heap.PutShort(Address + Heap.ArrayBaseOffset + ItemSize * index, itemData);
+        }
+
+        public void SetItem(int index, int itemData)
+        {
+            if (ItemSize != 4) throw new InvalidOperationException();
+
+            Heap.PutInt(Address + Heap.ArrayBaseOffset + ItemSize * index, itemData);
+        }
+
         public void SetItem(int index, long itemData)
         {
-            Memory<byte> dataSlice = Heap.GetMemorySlice(Address + 8 + 8 + itemSize * index, itemSize);
-            byte[] itemDataAsArray = itemSize == 8 ? itemData.AsByteArray() : ((int)itemData).AsByteArray();
-            itemDataAsArray.CopyTo(dataSlice);
-            if (Array is int[] intArr)
-            {
-                intArr[index] = (int)itemData;
-            }
-            else if (Array is byte[] byteArr)
-            {
-                byteArr[index] = (byte)itemData;
-            }
-            else if (Array is char[] charArr)
-            {
-                charArr[index] = (char)itemData;
-            }
-            else if (Array is short[] shortArr)
-            {
-                shortArr[index] = (short)itemData;
-            }
-            else if (Array is long[] longArr)
-            {
-                longArr[index] = itemData;
-            }
-            else if (Array is bool[] boolArr)
-            {
-                boolArr[index] = itemData != 0;
-            }
-            else if (Array is double[] doubleArr)
-            {
-                doubleArr[index] = JavaHelper.StoredDoubleToDouble(itemData);
-            }
-            else if (Array is float[] floatArr)
-            {
-                floatArr[index] = (float)JavaHelper.StoredDoubleToDouble(itemData);
-            }
-            else
-            {
-                throw new InvalidOperationException();
-            }
+            if (ItemSize != 8) throw new InvalidOperationException();
+
+            Heap.PutLong(Address + Heap.ArrayBaseOffset + ItemSize * index, itemData);
         }
-        public void SetItemByOffset(long offset, long itemData) => SetItem((int)((offset - ArrayBaseOffset) / itemSize), itemData);
-        public void SetDataByOffset(byte[] data, int offset, int numOfBytes)
+
+        public void SetItemByOffset(int offset, byte itemData)
         {
-            for (int i = 0; i < numOfBytes; i++)
-            {
-                SetItemByOffset(offset + ItemSize * i, data[i]);
-            }
+            if (ItemSize != 1) throw new InvalidOperationException();
+
+            Heap.PutByte(Address + offset, itemData);
         }
-        public override HeapObject Clone()
+
+        public void SetItemByOffset(int offset, short itemData)
         {
-            HeapArray clone = new HeapArray(Array, ItemTypeClassObjAddr);
-            return clone;
+            if (ItemSize != 2) throw new InvalidOperationException();
+
+            Heap.PutShort(Address + offset, itemData);
+        }
+
+        public void SetItemByOffset(int offset, int itemData)
+        {
+            if (ItemSize != 4) throw new InvalidOperationException();
+
+            Heap.PutInt(Address + offset, itemData);
+        }
+
+        public void SetItemByOffset(int offset, long itemData)
+        {
+            if (ItemSize != 8) throw new InvalidOperationException();
+
+            Heap.PutLong(Address + offset, itemData);
+        }
+
+        public Span<byte> GetDataSpan()
+        {
+            return Heap.GetSpan(Address + Heap.ArrayBaseOffset, ItemSize * Length);
         }
     }
 }

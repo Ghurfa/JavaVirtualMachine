@@ -12,15 +12,17 @@ namespace JavaVirtualMachine
         {
             return GetClassObjectAddr(classFile.Name);
         }
+
         public static int GetClassObjectAddr(CClassInfo classInfo)
         {
             return GetClassObjectAddr(classInfo.Name);
         }
+
         public static int GetClassObjectAddr(string name)
         {
-            for (int i = 0; i < name.Length; i++)
+            if (name[0] != '[')
             {
-                if (name[i] != '[')
+                for (int i = 0; i < name.Length; i++)
                 {
                     if (name[i] == 'L')
                     {
@@ -30,7 +32,7 @@ namespace JavaVirtualMachine
                 }
             }
 
-            if(name.Length == 1)
+            if (name.Length == 1)
             {
                 name = JavaHelper.PrimitiveFullName(name);
             }
@@ -42,10 +44,15 @@ namespace JavaVirtualMachine
             int addr = 0;
             if (!classObjects.TryGetValue(name, out addr))
             {
-                HeapObject classObj = new HeapObject(ClassFileManager.GetClassFile("java/lang/Class"));
-                addr = Heap.AddItem(classObj);
+                addr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/lang/Class"));
                 classObjects.Add(name, addr);
-                classObj.SetField("name", "Ljava/lang/String;", new FieldReferenceValue(JavaHelper.CreateJavaStringLiteral(name)));
+                HeapObject obj = Heap.GetObject(addr);
+                if (name == "java.io.OutputStream")
+                {
+
+                }
+                obj.SetField("name", "Ljava/lang/String;", JavaHelper.CreateJavaStringLiteral(name));
+                ;
             }
             return addr;
         }

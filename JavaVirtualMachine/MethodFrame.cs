@@ -1,5 +1,6 @@
 ﻿using JavaVirtualMachine.Attributes;
 using JavaVirtualMachine.ConstantPoolInfo;
+using Newtonsoft.Json.Linq;
 
 namespace JavaVirtualMachine
 {
@@ -363,9 +364,7 @@ namespace JavaVirtualMachine
                                 }
                                 else if (value.GetType() == typeof(CClassInfo))
                                 {
-                                    //fix based off ldc
-                                    ClassFile cFile = ClassFileManager.GetClassFile(((CClassInfo)value).Name);
-                                    Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapObject(cFile)));
+                                    Utility.Push(ref Stack, ref sp, ClassObjectManager.GetClassObjectAddr(((CClassInfo)value).Name));
                                 }
                                 else throw new NotImplementedException("Not supported");
                             }
@@ -450,6 +449,7 @@ namespace JavaVirtualMachine
                             Utility.Push(ref Stack, ref sp, Locals[opCode - 0x2A]);  //References already stored as int
                             break;
                         case OpCodes.iaload:
+                        case OpCodes.faload:
                         case OpCodes.aaload:
                             {
                                 int index = Utility.PopInt(Stack, ref sp);
@@ -458,44 +458,8 @@ namespace JavaVirtualMachine
                                 {
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                Utility.Push(ref Stack, ref sp, ((int[])array.Array)[index]);
-                            }
-                            break;
-                        case OpCodes.laload:
-                            {
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                Utility.Push(ref Stack, ref sp, ((long[])array.Array)[index]);
-                            }
-                            break;
-                        case OpCodes.faload:
-                            {
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                Utility.Push(ref Stack, ref sp, ((float[])array.Array)[index]);
-                            }
-                            break;
-                        case OpCodes.daload:
-                            {
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                Utility.Push(ref Stack, ref sp, ((double[])array.Array)[index]);
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                Utility.Push(ref Stack, ref sp, array.GetItemData(index));
                             }
                             break;
                         case OpCodes.baload:
@@ -506,30 +470,11 @@ namespace JavaVirtualMachine
                                 {
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                if (array.Array is byte[] byteArr)
-                                {
-                                    Utility.Push(ref Stack, ref sp, (byteArr)[index]);
-                                }
-                                else
-                                {
-                                    Utility.Push(ref Stack, ref sp, ((bool[])array.Array)[index] ? 1 : 0);
-                                }
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                Utility.Push(ref Stack, ref sp, array.GetItemDataByte(index));
                             }
                             break;
                         case OpCodes.caload:
-                            {
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                Utility.Push(ref Stack, ref sp, ((char[])array.Array)[index]);
-                                //make char obj?
-                            }
-                            break;
                         case OpCodes.saload:
                             {
                                 int index = Utility.PopInt(Stack, ref sp);
@@ -538,8 +483,21 @@ namespace JavaVirtualMachine
                                 {
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                Utility.Push(ref Stack, ref sp, ((short[])array.Array)[index]);
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                Utility.Push(ref Stack, ref sp, array.GetItemDataShort(index));
+                            }
+                            break;
+                        case OpCodes.laload:
+                        case OpCodes.daload:
+                            {
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
+                                if (arrayRef == 0)
+                                {
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                }
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                Utility.Push(ref Stack, ref sp, array.GetItemDataLong(index));
                             }
                             break;
                         case OpCodes.istore:
@@ -599,6 +557,7 @@ namespace JavaVirtualMachine
                             Locals[opCode - 0x4B] = Utility.PopInt(Stack, ref sp);
                             break;
                         case OpCodes.iastore:
+                        case OpCodes.fastore:
                         case OpCodes.aastore:
                             {
                                 int value = Utility.PopInt(Stack, ref sp);
@@ -608,11 +567,39 @@ namespace JavaVirtualMachine
                                 {
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((int[])array.Array)[index] = value;
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                array.SetItem(index, value);
+                            }
+                            break;
+                        case OpCodes.bastore:
+                            {
+                                int value = Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
+                                if (arrayRef == 0)
+                                {
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                }
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                array.SetItem(index, (byte)value);
+                            }
+                            break;
+                        case OpCodes.castore:
+                        case OpCodes.sastore:
+                            {
+                                int value = Utility.PopInt(Stack, ref sp);
+                                int index = Utility.PopInt(Stack, ref sp);
+                                int arrayRef = Utility.PopInt(Stack, ref sp);
+                                if (arrayRef == 0)
+                                {
+                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                }
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                array.SetItem(index, (short)value);
                             }
                             break;
                         case OpCodes.lastore:
+                        case OpCodes.dastore:
                             {
                                 long value = Utility.PopLong(Stack, ref sp);
                                 int index = Utility.PopInt(Stack, ref sp);
@@ -621,80 +608,8 @@ namespace JavaVirtualMachine
                                 {
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((long[])array.Array)[index] = value;
-                            }
-                            break;
-                        case OpCodes.fastore:
-                            {
-                                int valueAsInt = Utility.PopInt(Stack, ref sp);
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((float[])array.Array)[index] = JavaHelper.StoredFloatToFloat(valueAsInt);
-                            }
-                            break;
-                        case OpCodes.dastore:
-                            {
-                                long valueAsLong = Utility.PopLong(Stack, ref sp);
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((double[])array.Array)[index] = JavaHelper.StoredDoubleToDouble(valueAsLong);
-                            }
-                            break;
-                        case OpCodes.bastore:
-                            {
-                                int valueAsInt = Utility.PopInt(Stack, ref sp);
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                if (array.Array is byte[] byteArr)
-                                {
-                                    (byteArr)[index] = (byte)valueAsInt;
-                                }
-                                else
-                                {
-                                    ((bool[])array.Array)[index] = valueAsInt != 0;
-                                }
-                            }
-                            break;
-                        case OpCodes.castore:
-                            {
-                                int valueAsInt = Utility.PopInt(Stack, ref sp);
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((char[])array.Array)[index] = (char)valueAsInt;
-                            }
-                            break;
-                        case OpCodes.sastore:
-                            {
-                                int valueAsInt = Utility.PopInt(Stack, ref sp);
-                                int index = Utility.PopInt(Stack, ref sp);
-                                int arrayRef = Utility.PopInt(Stack, ref sp);
-                                if (arrayRef == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                ((short[])array.Array)[index] = (short)valueAsInt;
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                array.SetItem(index, value);
                             }
                             break;
                         case OpCodes.pop:
@@ -1346,7 +1261,7 @@ namespace JavaVirtualMachine
 
                                 //todo: superinterface? https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-5.html#jvms-5.4.3.2
 
-                                FieldValue fieldValue;
+                                long fieldValue;
                                 while (!cFile.StaticFieldsDictionary.TryGetValue((fieldRef.Name, fieldRef.Descriptor), out fieldValue))
                                 {
                                     cFile = cFile.SuperClass;
@@ -1356,20 +1271,13 @@ namespace JavaVirtualMachine
                                 {
                                     Utility.Push(ref Stack, ref sp, DateTime.Now.Ticks);
                                 }*/
-                                if (fieldValue.GetType() == typeof(FieldNumber))
+                                if (fieldRef.Descriptor == "J" || fieldRef.Descriptor == "D")
                                 {
-                                    int value = ((FieldNumber)fieldValue).Value;
-                                    Utility.Push(ref Stack, ref sp, value);
+                                    Utility.Push(ref Stack, ref sp, fieldValue);
                                 }
-                                else if (fieldValue.GetType() == typeof(FieldLargeNumber))
+                                else
                                 {
-                                    long value = ((FieldLargeNumber)fieldValue).Value;
-                                    Utility.Push(ref Stack, ref sp, value);
-                                }
-                                else if (fieldValue.GetType() == typeof(FieldReferenceValue))
-                                {
-                                    int value = ((FieldReferenceValue)fieldValue).Address;
-                                    Utility.Push(ref Stack, ref sp, value);
+                                    Utility.Push(ref Stack, ref sp, (int)fieldValue);
                                 }
                             }
                             break;
@@ -1389,21 +1297,21 @@ namespace JavaVirtualMachine
                                     case 'F':
                                         {
                                             int value = Utility.PopInt(Stack, ref sp);
-                                            cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = new FieldNumber(value);
+                                            cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = value;
                                         }
                                         break;
                                     case 'D':
                                     case 'J':
                                         {
                                             long value = Utility.PopLong(Stack, ref sp);
-                                            cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = new FieldLargeNumber(value);
+                                            cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = value;
                                         }
                                         break;
                                     case 'L':
                                     case '[':
                                         {
                                             int valueRef = Utility.PopInt(Stack, ref sp);
-                                            cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = new FieldReferenceValue(valueRef);
+                                            cFile.StaticFieldsDictionary[(fieldRef.Name, fieldRef.Descriptor)] = valueRef;
                                         }
                                         break;
                                 }
@@ -1421,22 +1329,15 @@ namespace JavaVirtualMachine
 
                                 CFieldRefInfo fieldRef = (CFieldRefInfo)ClassFile.Constants[index];
                                 HeapObject heapObj = Heap.GetObject(objectRef);
-                                var fieldValue = heapObj.GetField(fieldRef.Name, fieldRef.Descriptor);
-                                if (fieldValue.GetType() == typeof(FieldNumber))
+                                if (fieldRef.Descriptor == "J" || fieldRef.Descriptor == "D")
                                 {
-                                    Utility.Push(ref Stack, ref sp, ((FieldNumber)fieldValue).Value);
-                                }
-                                else if (fieldValue.GetType() == typeof(FieldLargeNumber))
-                                {
-                                    Utility.Push(ref Stack, ref sp, ((FieldLargeNumber)fieldValue).Value);
-                                }
-                                else if (fieldValue.GetType() == typeof(FieldReferenceValue))
-                                {
-                                    Utility.Push(ref Stack, ref sp, ((FieldReferenceValue)fieldValue).Address);
+                                    long fieldValue = heapObj.GetFieldLong(fieldRef.Name, fieldRef.Descriptor);
+                                    Utility.Push(ref Stack, ref sp, fieldValue);
                                 }
                                 else
                                 {
-                                    throw new NotSupportedException();
+                                    int fieldValue = heapObj.GetField(fieldRef.Name, fieldRef.Descriptor);
+                                    Utility.Push(ref Stack, ref sp, fieldValue);
                                 }
                             }
                             break;
@@ -1452,11 +1353,13 @@ namespace JavaVirtualMachine
                                     case 'S':
                                     case 'I':
                                     case 'F':
+                                    case 'L':
+                                    case '[':
                                         {
                                             int value = Utility.PopInt(Stack, ref sp);
                                             int objectRef = Utility.PopInt(Stack, ref sp);
                                             HeapObject heapObj = Heap.GetObject(objectRef);
-                                            heapObj.SetField(fieldRef.Name, fieldRef.Descriptor, new FieldNumber(value));
+                                            heapObj.SetField(fieldRef.Name, fieldRef.Descriptor, value);
                                         }
                                         break;
                                     case 'D':
@@ -1465,16 +1368,7 @@ namespace JavaVirtualMachine
                                             long value = Utility.PopLong(Stack, ref sp);
                                             int objectRef = Utility.PopInt(Stack, ref sp);
                                             HeapObject heapObj = Heap.GetObject(objectRef);
-                                            heapObj.SetField(fieldRef.Name, fieldRef.Descriptor, new FieldLargeNumber(value));
-                                        }
-                                        break;
-                                    case 'L':
-                                    case '[':
-                                        {
-                                            int valueRef = Utility.PopInt(Stack, ref sp);
-                                            int objectRef = Utility.PopInt(Stack, ref sp);
-                                            HeapObject heapObj = Heap.GetObject(objectRef);
-                                            heapObj.SetField(fieldRef.Name, fieldRef.Descriptor, new FieldReferenceValue(valueRef));
+                                            heapObj.SetFieldLong(fieldRef.Name, fieldRef.Descriptor, value);
                                         }
                                         break;
                                 }
@@ -1557,7 +1451,7 @@ namespace JavaVirtualMachine
                                     else if(method.Name == "invoke")
                                     {
                                         HeapObject methodHandle = Heap.GetObject(arguments[0]);
-                                        FieldReferenceValue methodType = (FieldReferenceValue)methodHandle.GetField("type", "Ljava/lang/invoke/MethodType;");
+                                        int methodTypeAddr = methodHandle.GetField("type", "Ljava/lang/invoke/MethodType;");
 
                                         bool equals = true; //semantically equal
                                         if(equals)
@@ -1656,8 +1550,7 @@ namespace JavaVirtualMachine
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
 
-                                string objectRefClassFileName = ((HeapObject)(Heap.GetItem(arguments[0]))).ClassFile.Name;
-                                ClassFile cFile = ClassFileManager.GetClassFile(objectRefClassFileName);
+                                ClassFile cFile = Heap.GetObject(arguments[0]).ClassFile;
 
                                 //Search for method in cFile's methodDictionary. If it's not there, repeat search in cFile's super and so on
                                 MethodInfo method;
@@ -1692,10 +1585,11 @@ namespace JavaVirtualMachine
                             {
                                 short index = readShort(code, ref ip);
                                 CClassInfo classInfo = (CClassInfo)ClassFile.Constants[index];
-                                ClassFile cFile = ClassFileManager.GetClassFile(classInfo.Name);
                                 ClassFileManager.InitializeClass(classInfo.Name);
-                                HeapObject heapObject = new HeapObject(cFile);
-                                Utility.Push(ref Stack, ref sp, Heap.AddItem(heapObject));
+
+                                int cFileIdx = ClassFileManager.GetClassFileIndex(classInfo.Name);
+
+                                Utility.Push(ref Stack, ref sp, Heap.CreateObject(cFileIdx));
                             }
                             break;
                         case OpCodes.newarray:
@@ -1709,28 +1603,28 @@ namespace JavaVirtualMachine
                                 switch ((ArrayTypeCodes)aType)
                                 {
                                     case ArrayTypeCodes.T_BOOLEAN:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new bool[count], ClassObjectManager.GetClassObjectAddr("boolean"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(1, count, ClassObjectManager.GetClassObjectAddr("boolean")));
                                         break;
                                     case ArrayTypeCodes.T_CHAR:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new char[count], ClassObjectManager.GetClassObjectAddr("char"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(2, count, ClassObjectManager.GetClassObjectAddr("char")));
                                         break;
                                     case ArrayTypeCodes.T_FLOAT:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new float[count], ClassObjectManager.GetClassObjectAddr("float"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(4, count, ClassObjectManager.GetClassObjectAddr("float")));
                                         break;
                                     case ArrayTypeCodes.T_DOUBLE:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new double[count], ClassObjectManager.GetClassObjectAddr("double"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(8, count, ClassObjectManager.GetClassObjectAddr("double")));
                                         break;
                                     case ArrayTypeCodes.T_BYTE:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new byte[count], ClassObjectManager.GetClassObjectAddr("byte"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(1, count, ClassObjectManager.GetClassObjectAddr("byte")));
                                         break;
                                     case ArrayTypeCodes.T_SHORT:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new short[count], ClassObjectManager.GetClassObjectAddr("short"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(2, count, ClassObjectManager.GetClassObjectAddr("short")));
                                         break;
                                     case ArrayTypeCodes.T_INT:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new int[count], ClassObjectManager.GetClassObjectAddr("int"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(4, count, ClassObjectManager.GetClassObjectAddr("int")));
                                         break;
                                     case ArrayTypeCodes.T_LONG:
-                                        Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new long[count], ClassObjectManager.GetClassObjectAddr("long"))));
+                                        Utility.Push(ref Stack, ref sp, Heap.CreateArray(8, count, ClassObjectManager.GetClassObjectAddr("long")));
                                         break;
                                     default:
                                         throw new NotImplementedException();
@@ -1748,14 +1642,14 @@ namespace JavaVirtualMachine
                                     JavaHelper.ThrowJavaException("java/lang/NegativeArraySizeException");
                                 }
 
-                                Utility.Push(ref Stack, ref sp, Heap.AddItem(new HeapArray(new int[count], ClassObjectManager.GetClassObjectAddr(type.Name))));
+                                Utility.Push(ref Stack, ref sp, Heap.CreateArray(4, count, ClassObjectManager.GetClassObjectAddr(type.Name)));
                             }
                             break;
                         case OpCodes.arraylength:
                             {
                                 int arrayRef = Utility.PopInt(Stack, ref sp);
-                                HeapArray array = (HeapArray)Heap.GetItem(arrayRef);
-                                Utility.Push(ref Stack, ref sp, array.GetLengthData());
+                                HeapArray array = Heap.GetArray(arrayRef);
+                                Utility.Push(ref Stack, ref sp, array.Length);
                             }
                             break;
                         case OpCodes.athrow:
@@ -1765,14 +1659,14 @@ namespace JavaVirtualMachine
                                 Stack[0] = objRef;
                                 sp = 1;
                                 HeapObject obj = Heap.GetObject(objRef);
-                                FieldReferenceValue message = (FieldReferenceValue)obj.GetField("detailMessage", "Ljava/lang/String;");
-                                if (message.Address == 0)
+                                int messageAddr = obj.GetField("detailMessage", "Ljava/lang/String;");
+                                if (messageAddr == 0)
                                 {
                                     throw new JavaException(obj.ClassFile); //Handled in the same frame, outside of this switch
                                 }
                                 else
                                 {
-                                    throw new JavaException(obj.ClassFile, $"{JavaHelper.ReadJavaString(message)}");
+                                    throw new JavaException(obj.ClassFile, $"{JavaHelper.ReadJavaString(messageAddr)}");
                                 }
                             }
                         case OpCodes.checkcast:
@@ -1823,19 +1717,19 @@ namespace JavaVirtualMachine
                         case OpCodes.monitorenter:
                             {
                                 int objectRef = Utility.PopInt(Stack, ref sp);
-                                HeapItem item = Heap.GetItem(objectRef);
+                                // todo
                             }
                             break;
                         case OpCodes.monitorexit:
                             {
                                 int objectRef = Utility.PopInt(Stack, ref sp);
-                                HeapItem item = Heap.GetItem(objectRef);
+                                // todo
                             }
                             break;
                         case OpCodes.ifnull:
                             {
                                 int offset = readShort(code, ref ip);
-                                if (Heap.GetItem(Utility.PopInt(Stack, ref sp)) == null)
+                                if (Utility.PopInt(Stack, ref sp) == 0)
                                 {
                                     ip = oldIp + offset;
                                 }
@@ -1844,7 +1738,7 @@ namespace JavaVirtualMachine
                         case OpCodes.ifnonnull:
                             {
                                 int offset = readShort(code, ref ip);
-                                if (Heap.GetItem(Utility.PopInt(Stack, ref sp)) != null)
+                                if (Utility.PopInt(Stack, ref sp) != 0)
                                 {
                                     ip = oldIp + offset;
                                 }
@@ -1876,7 +1770,7 @@ namespace JavaVirtualMachine
                     for (int i = 0; i < ExceptionTable.Length; i++)
                     {
                         ExceptionHandlerInfo handler = ExceptionTable[i];
-                        if ((handler.CatchType == 0 || ex.ClassFile.IsSubClassOf(ClassFileManager.GetClassFile(handler.CatchClassType))) &&
+                        if ((handler.CatchType == 0 || ex.ClassFile.IsSubClassOf(ClassFileManager.GetClassFile(handler.CatchClassType.Name))) &&
                             ip >= handler.StartPc && ip < handler.EndPc)
                         {
                             ip = handler.HandlerPc;

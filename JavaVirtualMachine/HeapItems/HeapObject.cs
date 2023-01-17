@@ -3,80 +3,70 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Xml.Linq;
 
 namespace JavaVirtualMachine
 {
-    public class HeapObject : HeapItem
+    public class HeapObject
     {
-        public ClassFile ClassFile;
-        public static int FieldOffset = 8;
-        public static int FieldSize = 8;
-        private FieldValue[] fields;
+        public int Address { get; private set; }
 
-        public HeapObject(ClassFile classFile)
+        private ClassFile? _classFile;
+        public ClassFile ClassFile => _classFile ??= ClassFileManager.ClassFiles[Heap.GetInt(Address)];
+
+        public HeapObject(int address)
         {
-            ClassFile = classFile;
-            fields = new FieldValue[ClassFile.ObjectFields.Length];
-            ClassFile.ObjectFields.CopyTo(fields, 0);
-            NumOfBytes = 8 + 8 * fields.Length;
-            Address = Heap.AllocateMemory(NumOfBytes);
+            Address = address;
         }
 
-        public FieldValue GetField(string name, string descriptor)
+        public int GetField(string name, string descriptor)
         {
-            return GetField(ClassFile.InstanceSlots[(name, descriptor)]);
+            int slot = ClassFile.InstanceSlots[(name, descriptor)];
+            return GetFieldByOffset(Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
         }
-        public FieldValue GetField(long slot)
+
+        public int GetField(int slot)
         {
-            return fields[slot];
+            int offset = Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot);
+            return GetFieldByOffset(offset);
         }
-        public FieldValue GetFieldByOffset(long offset)
+
+        public int GetFieldByOffset(int offset) => Heap.GetInt(Address + offset);
+
+        public long GetFieldLong(string name, string descriptor)
         {
-            return fields[(offset - FieldOffset) / FieldSize];
+            int slot = ClassFile.InstanceSlots[(name, descriptor)];
+            return GetFieldByOffsetLong(Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
         }
+
+        public long GetFieldLong(int slot)
+        {
+            int offset = Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot);
+            return GetFieldByOffsetLong(offset);
+        }
+
+        public long GetFieldByOffsetLong(int offset) => Heap.GetLong(Address + offset);
 
         public void SetField(string name, string descriptor, int value)
         {
-            if (descriptor[0] == '[' || descriptor[0] == 'L')
-            {
-                SetField(name, descriptor, new FieldReferenceValue(value));
-            }
-            else
-            {
-                SetField(name, descriptor, new FieldNumber(value));
-            }
+            int slot = ClassFile.InstanceSlots[(name, descriptor)];
+            SetFieldByOffset(Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
         }
-        public void SetField(string name, string descriptor, long value) => SetField(name, descriptor, new FieldLargeNumber(value));
-        public void SetField(string name, string descriptor, HeapObject value) => SetField(name, descriptor, new FieldReferenceValue(value.Address));
-        public void SetField(string name, string descriptor, FieldValue value)
+
+        public void SetFieldByOffset(int offset, int value)
+        {
+            Heap.PutInt(Address + offset, value);
+        }
+
+        public void SetFieldLong(string name, string descriptor, long value)
         {
             int slot = ClassFile.InstanceSlots[(name, descriptor)];
-            fields[slot] = value;
-            SetFieldData(slot, value);
+            SetFieldByOffsetLong(Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
         }
-        public void SetFieldBySlot(long slot, FieldValue value)
+
+        public void SetFieldByOffsetLong(int offset, long value)
         {
-            fields[slot] = value;
-            SetFieldData((int)slot, value);
-        }
-        public void SetFieldByOffset(long offset, FieldValue value)
-        {
-            int slot = (int)((offset - FieldOffset) / FieldSize);
-            fields[slot] = value;
-            SetFieldData(slot, value);
-        }
-        public void SetFieldData(int slot, FieldValue value)
-        {
-            value.Data.CopyTo(Heap.GetMemorySlice(Address + 8 + 8 * slot, 8));
-        }
-        public virtual HeapObject Clone()
-        {
-            HeapObject clone = new HeapObject(ClassFile);
-            for (int i = 0; i < fields.Length; i++)
-            {
-                clone.SetFieldBySlot(i, GetField(i));
-            }
-            return clone;
+            Heap.PutLong(Address + offset, value);
         }
 
         public bool IsInstance(int classObjectAddr)
@@ -86,15 +76,15 @@ namespace JavaVirtualMachine
             string from;
             if (this is HeapArray arrToCast)
             {
-                FieldReferenceValue nameField = (FieldReferenceValue)(Heap.GetObject(arrToCast.ItemTypeClassObjAddr)).GetField(2);
-                from = "[L" + JavaHelper.ReadJavaString(nameField).Replace('.', '/') + ';';
+                int nameStrAddr = Heap.GetObject(arrToCast.ItemTypeClassObjAddr).GetField(2);
+                from = "[L" + JavaHelper.ReadJavaString(nameStrAddr).Replace('.', '/') + ';';
             }
             else
             {
                 from = 'L' + ClassFile.Name + ";";
             }
 
-            string to = JavaHelper.ReadJavaString((FieldReferenceValue)classToCastTo.GetField(2));
+            string to = JavaHelper.ReadJavaString(classToCastTo.GetField(2));
 
             //https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-6.html#jvms-6.5.instanceof
 
@@ -126,9 +116,9 @@ namespace JavaVirtualMachine
                             toPrimitive = true;
                         }
 
-                        if(fromPrimitive || toPrimitive)
+                        if (fromPrimitive || toPrimitive)
                         {
-                            if(fromPrimitive && toPrimitive)
+                            if (fromPrimitive && toPrimitive)
                             {
                                 to = JavaHelper.PrimitiveFullName(to);
                                 if (to[0] != 'L') to = "L" + to + ";";
@@ -147,6 +137,10 @@ namespace JavaVirtualMachine
                                 return fromCFile.ImplementsInterface(toCFile);
                             }
                         }
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
                     }
                 }
                 else

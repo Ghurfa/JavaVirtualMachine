@@ -101,13 +101,10 @@ namespace JavaVirtualMachine
             ClassFileManager.InitDictionary(runtimePath: Configuration.rtPath, otherPaths: Configuration.srcPaths);
 
             //Create main thread object
-            ClassFile threadGroupCFile = ClassFileManager.GetClassFile("java/lang/ThreadGroup");
-            HeapObject threadGroupObj = new HeapObject(threadGroupCFile);
-            int threadGroupAddr = Heap.AddItem(threadGroupObj);
-
-            ClassFile threadCFile = ClassFileManager.GetClassFile("java/lang/Thread");
-            HeapObject threadObj = new HeapObject(threadCFile);
-            ThreadManager.ThreadAddr = Heap.AddItem(threadObj);
+            int threadGroupAddr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/lang/ThreadGroup"));
+            
+            ThreadManager.ThreadAddr = Heap.CreateObject(ClassFileManager.GetClassFileIndex("java/lang/Thread"));
+            HeapObject threadObj = Heap.GetObject(ThreadManager.ThreadAddr);
 
             threadObj.SetField("group", "Ljava/lang/ThreadGroup;", threadGroupAddr);
             threadObj.SetField("priority", "I", 5);
@@ -123,8 +120,9 @@ namespace JavaVirtualMachine
                 if (ex.ClassFile.Name != "java/lang/IllegalStateException") throw;
             }
 
-            ClassFile mainProg = ClassFileManager.GetClassFile("Program");
-            int mainProgObjAddr = Heap.AddItem(new HeapObject(mainProg));
+            int mainProgCFileIdx = ClassFileManager.GetClassFileIndex("Program");
+            ClassFile mainProg = ClassFileManager.ClassFiles[mainProgCFileIdx];
+            int mainProgObjAddr = Heap.CreateObject(mainProgCFileIdx);
             MethodInfo mainProgInit = mainProg.MethodDictionary[("<init>", "()V")];
             try
             {
