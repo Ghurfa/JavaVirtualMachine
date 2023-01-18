@@ -1409,10 +1409,10 @@ namespace JavaVirtualMachine
                 {
                     int objAddr = Args[1];
                     long offset = Utility.ToLong((Args[2], Args[3]));
-                    long bytes = Utility.ToLong((Args[4], Args[5]));
+                    long length = Utility.ToLong((Args[4], Args[5]));
                     byte value = (byte)Args[6];
 
-                    Heap.Fill(objAddr + (int)offset, bytes, value);
+                    Heap.GetSpan(objAddr + (int)offset, (int)length).Fill(value);
                     return;
                 }
                 else if (className == "sun/misc/Unsafe" && nameAndDescriptor == ("staticFieldBase", "(Ljava/lang/reflect/Field;)Ljava/lang/Object;"))

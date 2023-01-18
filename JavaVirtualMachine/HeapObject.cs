@@ -16,51 +16,37 @@
         public int GetField(string name, string descriptor)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            return GetFieldByOffset(Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
+            return Heap.GetInt(Address + Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
         }
 
         public int GetField(int slot)
         {
             int offset = Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot);
-            return GetFieldByOffset(offset);
+            return Heap.GetInt(Address + offset);
         }
-
-        public int GetFieldByOffset(int offset) => Heap.GetInt(Address + offset);
 
         public long GetFieldLong(string name, string descriptor)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            return GetFieldByOffsetLong(Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
+            return Heap.GetLong(Address + Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
         }
 
         public long GetFieldLong(int slot)
         {
             int offset = Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot);
-            return GetFieldByOffsetLong(offset);
+            return Heap.GetLong(Address + offset);
         }
-
-        public long GetFieldByOffsetLong(int offset) => Heap.GetLong(Address + offset);
 
         public void SetField(string name, string descriptor, int value)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            SetFieldByOffset(Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
-        }
-
-        public void SetFieldByOffset(int offset, int value)
-        {
-            Heap.PutInt(Address + offset, value);
+            Heap.PutInt(Address + Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
         }
 
         public void SetFieldLong(string name, string descriptor, long value)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            SetFieldByOffsetLong(Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
-        }
-
-        public void SetFieldByOffsetLong(int offset, long value)
-        {
-            Heap.PutLong(Address + offset, value);
+            Heap.PutLong(Address + Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
         }
 
         public bool IsInstance(int classObjectAddr)
@@ -92,7 +78,7 @@
                     {
                         fromCFile = ClassFileManager.GetClassFile(from);
                     }
-                    catch(FileNotFoundException)
+                    catch (FileNotFoundException)
                     {
                         fromPrimitive = true;
                     }

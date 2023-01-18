@@ -458,7 +458,7 @@ namespace JavaVirtualMachine
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = Heap.GetArray(arrayRef);
-                                Utility.Push(ref Stack, ref sp, array.GetItemData(index));
+                                Utility.Push(ref Stack, ref sp, array.GetItem(index));
                             }
                             break;
                         case OpCodes.baload:
@@ -470,7 +470,7 @@ namespace JavaVirtualMachine
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = Heap.GetArray(arrayRef);
-                                Utility.Push(ref Stack, ref sp, array.GetItemDataByte(index));
+                                Utility.Push(ref Stack, ref sp, array.GetItemByte(index));
                             }
                             break;
                         case OpCodes.caload:
@@ -483,7 +483,7 @@ namespace JavaVirtualMachine
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = Heap.GetArray(arrayRef);
-                                Utility.Push(ref Stack, ref sp, array.GetItemDataShort(index));
+                                Utility.Push(ref Stack, ref sp, array.GetItemShort(index));
                             }
                             break;
                         case OpCodes.laload:
@@ -496,7 +496,7 @@ namespace JavaVirtualMachine
                                     JavaHelper.ThrowJavaException("java/lang/NullPointerException");
                                 }
                                 HeapArray array = Heap.GetArray(arrayRef);
-                                Utility.Push(ref Stack, ref sp, array.GetItemDataLong(index));
+                                Utility.Push(ref Stack, ref sp, array.GetItemLong(index));
                             }
                             break;
                         case OpCodes.istore:

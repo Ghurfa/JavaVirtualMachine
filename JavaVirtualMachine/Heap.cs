@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 namespace JavaVirtualMachine
 {
@@ -19,24 +20,21 @@ namespace JavaVirtualMachine
             ClassFile cFile = ClassFileManager.ClassFiles[classFileIdx];
             int numBytes = 8 + 8 * cFile.InstanceFields.Count;
             int addr = AllocateMemory(numBytes);
-            classFileIdx.AsByteArray().CopyTo(Memory.Slice(addr));
+            BinaryPrimitives.WriteInt32LittleEndian(Memory.Slice(addr).Span, classFileIdx);
             return addr;
         }
 
         public static int CloneObject(int address)
         {
-            int cFileIdx = Memory.Slice(address, 4).ToArray().ToInt();
-            bool isArray = Memory.Slice(address + ArrayMarkOffset, 4).ToArray().ToInt() != 0;
+            int cFileIdx = BinaryPrimitives.ReadInt32LittleEndian(Memory.Slice(address).Span);
+            bool isArray = BinaryPrimitives.ReadInt32LittleEndian(Memory.Slice(address + ArrayMarkOffset).Span) != 0;
 
             int numBytes;
             if (isArray)
             {
-                int itemTypeClassObjAddr = Memory.Slice(8, 4).ToArray().ToInt();
-                int doubleClassObject = ClassObjectManager.GetClassObjectAddr("double");
-                int longClassObject = ClassObjectManager.GetClassObjectAddr("long");
-                int itemSize = itemTypeClassObjAddr == doubleClassObject || itemTypeClassObjAddr == longClassObject ? 8 : 4;
-
-                int itemCount = Memory.Slice(ArrayLengthOffset, 4).ToArray().ToInt();
+                int itemTypeClassObjAddr = BinaryPrimitives.ReadInt32LittleEndian(Memory.Slice(address + 8).Span);
+                int itemSize = GetArrayItemSize(itemTypeClassObjAddr);
+                int itemCount = BinaryPrimitives.ReadInt32LittleEndian(Memory.Slice(address + ArrayLengthOffset).Span);
 
                 numBytes = ArrayBaseOffset + itemSize * itemCount;
             }
@@ -65,10 +63,10 @@ namespace JavaVirtualMachine
             int numBytes = ArrayBaseOffset + itemSize * itemCount;
             int addr = AllocateMemory(numBytes);
             int objectCFileIdx = ClassFileManager.GetClassFileIndex("java/lang/Object");
-            objectCFileIdx.AsByteArray().CopyTo(Memory.Slice(addr)); // Store type
+            BinaryPrimitives.WriteInt32LittleEndian(Memory.Slice(addr).Span, objectCFileIdx); // Store type
             Memory.Span[addr + ArrayMarkOffset] = 1; // Mark as array
-            itemTypeClassObjAddr.AsByteArray().CopyTo(Memory.Slice(addr + ArrayItemTypeOffset)); // Store item type
-            itemCount.AsByteArray().CopyTo(Memory.Slice(addr + ArrayLengthOffset)); // Store length
+            BinaryPrimitives.WriteInt32LittleEndian(Memory.Slice(addr + ArrayItemTypeOffset).Span, itemTypeClassObjAddr); // Store item type
+            BinaryPrimitives.WriteInt32LittleEndian(Memory.Slice(addr + ArrayLengthOffset).Span, itemCount); // Store length
 
             return addr;
         }
@@ -77,7 +75,7 @@ namespace JavaVirtualMachine
         {
             if (address == 0) return null;
 
-            bool isArray = Memory.Slice(address + ArrayMarkOffset, 4).ToArray().ToInt() != 0;
+            bool isArray = BinaryPrimitives.ReadInt32LittleEndian(Memory.Slice(address + ArrayMarkOffset).Span) != 0;
 
             if (isArray)
             {
@@ -91,49 +89,22 @@ namespace JavaVirtualMachine
         {
             if (address == 0) return null;
 
-            int itemTypeClassObjAddr = Memory.Slice(address + ArrayItemTypeOffset, 4).ToArray().ToInt();
-            int doubleClassObject = ClassObjectManager.GetClassObjectAddr("double");
-            int longClassObject = ClassObjectManager.GetClassObjectAddr("long");
-            int shortClassObject = ClassObjectManager.GetClassObjectAddr("short");
-            int charClassObject = ClassObjectManager.GetClassObjectAddr("char");
-            int byteClassObject = ClassObjectManager.GetClassObjectAddr("byte");
-            int booleanClassObject = ClassObjectManager.GetClassObjectAddr("boolean");
+            int itemTypeClassObjAddr = BinaryPrimitives.ReadInt32LittleEndian(Memory.Slice(address + ArrayItemTypeOffset).Span);
 
-            int itemSize;
-            if (itemTypeClassObjAddr == doubleClassObject || itemTypeClassObjAddr == longClassObject)
-            {
-                itemSize = 8;
-            }
-            else if (itemTypeClassObjAddr == shortClassObject || itemTypeClassObjAddr == charClassObject)
-            {
-                itemSize = 2;
-            }
-            else if (itemTypeClassObjAddr == byteClassObject || itemTypeClassObjAddr == booleanClassObject)
-            {
-                itemSize = 1;
-            }
-            else itemSize = 4;
-
-            return new HeapArray(address, itemSize);
+            return new HeapArray(address, GetArrayItemSize(itemTypeClassObjAddr));
         }
 
-        public static byte GetByte(int address) => Memory.Slice(address, 1).ToArray()[0];
-        public static short GetShort(int address) => Memory.Slice(address, 2).ToArray().ToShort();
-        public static int GetInt(int address) => Memory.Slice(address, 4).ToArray().ToInt();
-        public static long GetLong(int address) => Memory.Slice(address, 8).ToArray().ToLong();
+        public static byte GetByte(int address) => Memory.Slice(address).Span[0];
+        public static short GetShort(int address) => BinaryPrimitives.ReadInt16LittleEndian(Memory.Slice(address).Span);
+        public static int GetInt(int address) => BinaryPrimitives.ReadInt32LittleEndian(Memory.Slice(address).Span);
+        public static long GetLong(int address) => BinaryPrimitives.ReadInt64LittleEndian(Memory.Slice(address).Span);
         public static Span<byte> GetSpan(int address, int length) => Memory.Slice(address, length).Span;
         //public static Memory<byte> GetMemorySlice(int startAddress, int size) => Memory.Slice(startAddress, size);
 
         public static void PutByte(int address, byte value) => Memory.Slice(address, 1).Span[0] = value;
-        public static void PutShort(int address, short value) => value.AsByteArray().CopyTo(Memory.Slice(address, 2));
-        public static void PutInt(int address, int value) => value.AsByteArray().CopyTo(Memory.Slice(address, 4));
-        public static void PutLong(int address, long value) => value.AsByteArray().CopyTo(Memory.Slice(address, 8));
-        public static void PutData(int address, byte[] data) => data.CopyTo(Memory.Slice(address, data.Length));
-
-        public static void Fill(long address, long numOfBytes, byte value)
-        {
-            Memory.Slice((int)address, (int)numOfBytes).Span.Fill(value);
-        }
+        public static void PutShort(int address, short value) => BinaryPrimitives.WriteInt16LittleEndian(Memory.Slice(address).Span, value);
+        public static void PutInt(int address, int value) => BinaryPrimitives.WriteInt32LittleEndian(Memory.Slice(address).Span, value);
+        public static void PutLong(int address, long value) => BinaryPrimitives.WriteInt64LittleEndian(Memory.Slice(address).Span, value);
 
         public static int AllocateMemory(long size)
         {
@@ -152,9 +123,33 @@ namespace JavaVirtualMachine
 
         private static void ExpandMemory()
         {
-            byte[] newMemory = new byte[Memory.Length * 2];
-            Memory.ToArray().CopyTo((Memory<byte>)newMemory);
-            Memory = new Memory<byte>(newMemory);
+            Memory<byte> newMemory = new(new byte[Memory.Length * 2]);
+            Memory.CopyTo(newMemory);
+            Memory = newMemory;
+        }
+
+        private static int GetArrayItemSize(int itemTypeClassObjAddr)
+        {
+            int doubleClassObject = ClassObjectManager.GetClassObjectAddr("double");
+            int longClassObject = ClassObjectManager.GetClassObjectAddr("long");
+            int shortClassObject = ClassObjectManager.GetClassObjectAddr("short");
+            int charClassObject = ClassObjectManager.GetClassObjectAddr("char");
+            int byteClassObject = ClassObjectManager.GetClassObjectAddr("byte");
+            int booleanClassObject = ClassObjectManager.GetClassObjectAddr("boolean");
+
+            if (itemTypeClassObjAddr == doubleClassObject || itemTypeClassObjAddr == longClassObject)
+            {
+                return 8;
+            }
+            else if (itemTypeClassObjAddr == shortClassObject || itemTypeClassObjAddr == charClassObject)
+            {
+                return 2;
+            }
+            else if (itemTypeClassObjAddr == byteClassObject || itemTypeClassObjAddr == booleanClassObject)
+            {
+                return 1;
+            }
+            else return 4;
         }
     }
 }
