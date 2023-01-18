@@ -40,7 +40,7 @@
             streams.Add(file, fileStream);
         }
 
-        public static void WriteBytes(string file, Span<byte> span, bool append)
+        public static void WriteBytes(string file, ReadOnlySpan<byte> span, bool append)
         {
             FileStream fileStream = streams[file];
             if(append)
@@ -56,13 +56,13 @@
             fileStream.Flush();
         }
 
-        public static void WriteBytesToConsole(Span<byte> span)
+        public static void WriteBytesToConsole(ReadOnlySpan<byte> span)
         {
             Console.ForegroundColor = ConsoleColor.White;
             ConsoleOutputStream.Write(span);
         }
 
-        public static void WriteBytesToError(Span<byte> span)
+        public static void WriteBytesToError(ReadOnlySpan<byte> span)
         {
             Console.ForegroundColor = ConsoleColor.White;
             ConsoleErrorStream.Write(span);

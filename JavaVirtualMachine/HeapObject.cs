@@ -1,62 +1,66 @@
-﻿namespace JavaVirtualMachine
+﻿xusing JavaVirtualMachine.Heaps;
+
+namespace JavaVirtualMachine
 {
     public class HeapObject
     {
         public int Address { get; private set; }
+        protected IHeap OwnerHeap;
 
         private ClassFile? _classFile;
         public ClassFile ClassFile => _classFile ??= ClassFileManager.ClassFiles[Heap.GetInt(Address)];
 
-        public HeapObject(int address)
+        public HeapObject(int address, IHeap heap)
         {
             Address = address;
             _classFile = null;
+            OwnerHeap = heap;
         }
 
         public int GetField(string name, string descriptor)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            return Heap.GetInt(Address + Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
+            return OwnerHeap.GetInt(Address + OwnerHeap.ObjectFieldOffset + OwnerHeap.ObjectFieldSize * slot);
         }
 
         public int GetField(int slot)
         {
-            int offset = Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot);
-            return Heap.GetInt(Address + offset);
+            int offset = OwnerHeap.ObjectFieldOffset + (OwnerHeap.ObjectFieldSize * slot);
+            return OwnerHeap.GetInt(Address + offset);
         }
 
         public long GetFieldLong(string name, string descriptor)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            return Heap.GetLong(Address + Heap.ObjectFieldOffset + Heap.ObjectFieldSize * slot);
+            return OwnerHeap.GetLong(Address + OwnerHeap.ObjectFieldOffset + OwnerHeap.ObjectFieldSize * slot);
         }
 
         public long GetFieldLong(int slot)
         {
-            int offset = Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot);
-            return Heap.GetLong(Address + offset);
+            int offset = OwnerHeap.ObjectFieldOffset + (OwnerHeap.ObjectFieldSize * slot);
+            return OwnerHeap.GetLong(Address + offset);
         }
 
         public void SetField(string name, string descriptor, int value)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            Heap.PutInt(Address + Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
+            OwnerHeap.PutInt(Address + OwnerHeap.ObjectFieldOffset + (OwnerHeap.ObjectFieldSize * slot), value);
         }
 
         public void SetFieldLong(string name, string descriptor, long value)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
-            Heap.PutLong(Address + Heap.ObjectFieldOffset + (Heap.ObjectFieldSize * slot), value);
+            OwnerHeap.PutLong(Address + OwnerHeap.ObjectFieldOffset + (OwnerHeap.ObjectFieldSize * slot), value);
         }
 
         public bool IsInstance(int classObjectAddr)
         {
-            HeapObject classToCastTo = Heap.GetObject(classObjectAddr);
+            HeapObject classToCastTo = OwnerHeap.GetObject(classObjectAddr);
 
             string from;
             if (this is HeapArray arrToCast)
             {
-                int nameStrAddr = Heap.GetObject(arrToCast.ItemTypeClassObjAddr).GetField(2);
+                int nameStrAddr = OwnerHeap.GetObject(arrToCast.ItemTypeClassObjAddr).GetField(2);
                 from = "[L" + JavaHelper.ReadJavaString(nameStrAddr).Replace('.', '/') + ';';
             }
             else
