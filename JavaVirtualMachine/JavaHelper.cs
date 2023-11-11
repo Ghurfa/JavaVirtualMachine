@@ -76,6 +76,7 @@ namespace JavaVirtualMachine
                 Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, retVal);
             }
         }
+
         public static void ReturnLargeValue(long retVal)
         {
             MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;
@@ -87,6 +88,7 @@ namespace JavaVirtualMachine
                 Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, retVal);
             }
         }
+
         public static void ReturnVoid()
         {
             MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;

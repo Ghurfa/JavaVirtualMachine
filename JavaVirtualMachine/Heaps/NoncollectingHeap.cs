@@ -23,7 +23,7 @@ namespace JavaVirtualMachine.Heaps
         public int CreateObject(int classFileIdx)
         {
             ClassFile cFile = ClassFileManager.ClassFiles[classFileIdx];
-            int numBytes = 8 + 8 * cFile.InstanceFields.Count;
+            int numBytes = ObjectFieldOffset + ObjectFieldSize * cFile.InstanceFields.Count;
             int addr = AllocateMemory(numBytes);
             BinaryPrimitives.WriteInt32LittleEndian(Memory.Slice(addr).Span, classFileIdx);
             return addr;

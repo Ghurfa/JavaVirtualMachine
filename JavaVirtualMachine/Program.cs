@@ -37,7 +37,7 @@ namespace JavaVirtualMachine
                         currProcessName = Path.ChangeExtension(currProcessName, ".exe");
                         if (currProcessName.Contains(Environment.CurrentDirectory))
                         {
-                            currProcessName = currProcessName.Replace(Environment.CurrentDirectory, String.Empty);
+                            currProcessName = currProcessName.Replace(Environment.CurrentDirectory, string.Empty);
                         }
                         currProcessName = currProcessName.Replace("\\", "");
                         currProcessName = currProcessName.Replace("\"", "");
