@@ -96,37 +96,37 @@ namespace JavaVirtualMachine
             Program.MethodFrameStack.Pop();
         }
 
-        public static void RunJavaFunction(MethodInfo methodInfo, params int[] arguments)
+        public static int RunJavaFunctionYielding(MethodInfo methodInfo, params int[] arguments)
         {
             Program.StackTracePrinter.PrintMethodCall(methodInfo, arguments);
             if (methodInfo.HasFlag(MethodInfoFlag.Native))
             {
                 NativeMethodFrame methodFrame = new NativeMethodFrame(methodInfo);
                 arguments.CopyTo(methodFrame.Locals, 0);
-                methodFrame.Execute();
             }
             else
             {
                 MethodFrame methodFrame = new MethodFrame(methodInfo);
                 arguments.CopyTo(methodFrame.Locals, 0);
-                methodFrame.Execute();
             }
+            return 0;
         }
 
-        public static void ThrowJavaException(string type)
+        public static IEnumerable<int> ThrowJavaExceptionYielding(string type)
         {
             int exceptionCFileIdx = ClassFileManager.GetClassFileIndex(type);
             ClassFile exceptionCFile = ClassFileManager.ClassFiles[exceptionCFileIdx];
-            int objRef = Heap.CreateObject(exceptionCFileIdx);
+            int exceptionObjRef = Heap.CreateObject(exceptionCFileIdx);
 
             MethodInfo initMethod = exceptionCFile.MethodDictionary[("<init>", "()V")];
-            RunJavaFunction(initMethod, objRef);
+            RunJavaFunctionYielding(initMethod, exceptionObjRef);
+            yield return 0;
 
             MethodFrame frame = Program.MethodFrameStack.Peek();
             frame.Stack = new int[frame.Stack.Length];
-            frame.Stack[0] = objRef;
+            frame.Stack[0] = exceptionObjRef;
             frame.sp = 1;
-            throw new JavaException(exceptionCFile);
+            yield return exceptionObjRef;
         }
 
         public static bool IsArray(this CClassInfo classInfo)
@@ -357,7 +357,7 @@ namespace JavaVirtualMachine
             return descriptor;
         }
 
-        public static void CreateMethodTypeObj(string descriptor)
+        public static IEnumerator<int> CreateMethodTypeObjYielding(string descriptor)
         {
             ClassFile methodTypeCFile = ClassFileManager.ClassFiles[ClassFileManager.GetClassFileIndex("java/lang/invoke/MethodType")];
             MethodInfo methodTypeMethod = methodTypeCFile.MethodDictionary[("methodType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;")];
@@ -378,7 +378,7 @@ namespace JavaVirtualMachine
             string retType = ReadDescriptorArg(descriptor, ref i);
             int retClassObj = ClassObjectManager.GetClassObjectAddr(retType);
 
-            RunJavaFunction(methodTypeMethod, retClassObj, paramsArrAddr);
+            yield return RunJavaFunctionYielding(methodTypeMethod, retClassObj, paramsArrAddr);
         }
 
         public static int ResolveMethodHandle(CMethodHandleInfo methodHandle)

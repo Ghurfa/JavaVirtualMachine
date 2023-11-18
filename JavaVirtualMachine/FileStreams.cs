@@ -6,10 +6,19 @@
         private static StreamReader ConsoleInputReader = new StreamReader(Console.OpenStandardInput());
         private static Stream ConsoleOutputStream = Console.OpenStandardOutput();
         private static Stream ConsoleErrorStream = Console.OpenStandardError();
-        public static void OpenRead(string file)
+
+        public static bool OpenRead(string file)
         {
-            FileStream fileStream = File.OpenRead(file);
-            streams.Add(file, fileStream);
+            try
+            {
+                FileStream fileStream = File.OpenRead(file);
+                streams.Add(file, fileStream);
+                return false;
+            }
+            catch (FileNotFoundException)
+            {
+                return true;
+            }
         }
 
         public static int ReadBytes(string file, Span<byte> span)
@@ -34,10 +43,18 @@
             return 0;
         }
 
-        public static void OpenWrite(string file)
+        public static bool OpenWrite(string file)
         {
-            FileStream fileStream = File.Open(file, FileMode.Open);
-            streams.Add(file, fileStream);
+            try
+            {
+                FileStream fileStream = File.Open(file, FileMode.Open);
+                streams.Add(file, fileStream);
+                return true;
+            }
+            catch (FileNotFoundException)
+            {
+                return false;
+            }
         }
 
         public static void WriteBytes(string file, ReadOnlySpan<byte> span, bool append)
