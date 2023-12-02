@@ -85,10 +85,13 @@ namespace JavaVirtualMachine.StackTracePrinters
             PrintWithColor(DebugDefaultColor, LeftPad + "Returned void\n");
         }
 
-        public void PrintMethodThrewException(MethodInfo method, JavaException exception)
+        public void PrintMethodThrewException(MethodInfo method, int exception)
         {
             Depth--;
-            PrintWithColor(ExceptionThrownColor, $"{LeftPad}Threw {exception.ClassFile.Name} ({exception.Message})\n");
+            HeapObject exceptionObj = Heap.GetObject(exception);
+            string type = exceptionObj.ClassFile.Name;
+            string message = JavaHelper.ReadJavaString(exceptionObj.GetField("detailmessage", "Ljava/lang/String;"));
+            PrintWithColor(ExceptionThrownColor, $"{LeftPad}Threw {type} ({message})\n");
         }
 
         private void PrintArgs(byte methodColor, string descriptor, bool isStatic, int[] args)

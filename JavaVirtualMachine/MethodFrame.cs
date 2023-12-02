@@ -609,7 +609,18 @@ namespace JavaVirtualMachine
                             int arrayRef = Utility.PopInt(Stack, ref sp);
                             if (arrayRef == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NullPointerException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             HeapArray array = Heap.GetArray(arrayRef);
                             array.SetItem(index, value);
@@ -622,7 +633,18 @@ namespace JavaVirtualMachine
                             int arrayRef = Utility.PopInt(Stack, ref sp);
                             if (arrayRef == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NullPointerException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             HeapArray array = Heap.GetArray(arrayRef);
                             array.SetItem(index, (byte)value);
@@ -636,7 +658,18 @@ namespace JavaVirtualMachine
                             int arrayRef = Utility.PopInt(Stack, ref sp);
                             if (arrayRef == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NullPointerException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             HeapArray array = Heap.GetArray(arrayRef);
                             array.SetItem(index, (short)value);
@@ -650,7 +683,18 @@ namespace JavaVirtualMachine
                             int arrayRef = Utility.PopInt(Stack, ref sp);
                             if (arrayRef == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NullPointerException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             HeapArray array = Heap.GetArray(arrayRef);
                             array.SetItem(index, value);
@@ -795,7 +839,18 @@ namespace JavaVirtualMachine
                             int first = Utility.PopInt(Stack, ref sp);
                             if (second == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/ArithmeticException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             Utility.Push(ref Stack, ref sp, first / second);
                         }
@@ -806,7 +861,18 @@ namespace JavaVirtualMachine
                             long first = Utility.PopLong(Stack, ref sp);
                             if (second == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/ArithmeticException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             Utility.Push(ref Stack, ref sp, first / second);
                         }
@@ -817,7 +883,18 @@ namespace JavaVirtualMachine
                             float first = Utility.PopFloat(Stack, ref sp);
                             if (second == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/ArithmeticException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             Utility.Push(ref Stack, ref sp, first / second);
                         }
@@ -828,7 +905,18 @@ namespace JavaVirtualMachine
                             double first = Utility.PopDouble(Stack, ref sp);
                             if (second == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/ArithmeticException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             Utility.Push(ref Stack, ref sp, first / second);
                         }
@@ -839,7 +927,18 @@ namespace JavaVirtualMachine
                             int first = Utility.PopInt(Stack, ref sp);
                             if (second == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/ArithmeticException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             Utility.Push(ref Stack, ref sp, first % second);
                         }
@@ -850,7 +949,18 @@ namespace JavaVirtualMachine
                             long first = Utility.PopLong(Stack, ref sp);
                             if (second == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/ArithmeticException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/ArithmeticException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             else
                             {
@@ -1368,7 +1478,18 @@ namespace JavaVirtualMachine
 
                             if (objectRef == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NullPointerException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
 
                             CFieldRefInfo fieldRef = (CFieldRefInfo)ClassFile.Constants[index];
@@ -1420,113 +1541,64 @@ namespace JavaVirtualMachine
                         break;
                     case OpCodes.invokevirtual:
                     case OpCodes.invokespecial:
-                    case OpCodes.invokedynamic:
                         {
                             MethodInfo method;
                             int[] arguments;
-                            if ((OpCodes)opCode == OpCodes.invokedynamic)
+                            //Get method ref
+                            short index = readShort(code, ref ip);
+                            CMethodRefInfo methodRef = (CMethodRefInfo)ClassFile.Constants[index];
+
+                            //Get args
+                            arguments = new int[methodRef.NumOfArgs() + 1];
+                            for (int i = arguments.Length - 1; i >= 0; i--)
                             {
-                                //https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
-                                //https://docs.oracle.com/javase/8/docs/technotes/guides/vm/multiple-language-support.html
-                                short index = readShort(code, ref ip);
-                                CInvokeDynamicInfo callSiteSpecifier = (CInvokeDynamicInfo)ClassFile.Constants[index];
-
-                                ip += 2; //Third and fourth bytes are zero
-
-                                var resolution = JavaHelper.ResolveCallSiteSpecifier(callSiteSpecifier);
-
-                                ClassFile methodHandlesCFile = ClassFileManager.GetClassFile("java/lang/invoke/MethodHandles");
-                                MethodInfo getLookupMethod = methodHandlesCFile.MethodDictionary[("lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;")];
-                                JavaHelper.RunJavaFunction(getLookupMethod);
-                                int lookupObj = Utility.PopInt(Stack, ref sp);
-
-                                string methodDescriptor = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;"
-                                                            + callSiteSpecifier.BootstrapMethod.GetArgumentsDescriptor()
-                                                            + ")Ljava/lang/invoke/CallSite;";
-                                method = JavaHelper.ResolveMethod("java/lang/invoke/MethodHandle", "invoke", methodDescriptor);
-
-                                arguments = new int[4 + resolution.staticArgs.Length];
-                                arguments[0] = resolution.methodHandle;
-                                arguments[1] = lookupObj;
-                                arguments[2] = JavaHelper.CreateJavaStringLiteral(callSiteSpecifier.Name);
-                                arguments[3] = resolution.methodType;
-                                resolution.staticArgs.CopyTo(arguments, 4);
-                            }
-                            else
-                            {
-                                //Get method ref
-                                short index = readShort(code, ref ip);
-                                CMethodRefInfo methodRef = (CMethodRefInfo)ClassFile.Constants[index];
-
-                                //Get args
-                                arguments = new int[methodRef.NumOfArgs() + 1];
-                                for (int i = arguments.Length - 1; i >= 0; i--)
-                                {
-                                    arguments[i] = Utility.PopInt(Stack, ref sp);
-                                }
-
-                                if (arguments[0] == 0)
-                                {
-                                    JavaHelper.ThrowJavaException("java/lang/NullPointerException");
-                                }
-
-                                ClassFile cFile;
-                                if ((OpCodes)opCode == OpCodes.invokevirtual)
-                                {
-                                    string objectRefClassFileName = Heap.GetObject(arguments[0]).ClassFile.Name;
-                                    cFile = ClassFileManager.GetClassFile(objectRefClassFileName);
-                                }
-                                else
-                                {
-                                    CClassInfo cFileInfo = (CClassInfo)ClassFile.Constants[methodRef.ClassIndex];
-                                    cFile = ClassFileManager.GetClassFile(cFileInfo.Name);
-                                }
-                                method = JavaHelper.ResolveMethod(cFile.Name, methodRef.Name, methodRef.Descriptor);
+                                arguments[i] = Utility.PopInt(Stack, ref sp);
                             }
 
-                            if (method.IsSignaturePolymorphic())
+                            if (arguments[0] == 0)
                             {
-                                JavaHelper.CreateMethodTypeObj(method.Descriptor);
-                                int methodTypeObjAddr = Utility.PopInt(Stack, ref sp);
-                                if (method.Name == "invokeExact")
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NullPointerException"))
                                 {
-                                    HeapObject methodHandle = Heap.GetObject(arguments[0]);
-                                }
-                                else if (method.Name == "invoke")
-                                {
-                                    HeapObject methodHandle = Heap.GetObject(arguments[0]);
-                                    int methodTypeAddr = methodHandle.GetField("type", "Ljava/lang/invoke/MethodType;");
-
-                                    bool equals = true; //semantically equal
-                                    if (equals)
+                                    if (e == 0)
                                     {
-
+                                        yield return e;
                                     }
                                     else
                                     {
-                                        throw new NotImplementedException();
+                                        exception = e;
                                     }
                                 }
+                                break;
+                            }
 
+                            ClassFile cFile;
+                            if ((OpCodes)opCode == OpCodes.invokevirtual)
+                            {
+                                string objectRefClassFileName = Heap.GetObject(arguments[0]).ClassFile.Name;
+                                cFile = ClassFileManager.GetClassFile(objectRefClassFileName);
                             }
                             else
                             {
-                                if (method.HasFlag(MethodInfoFlag.Native))
+                                CClassInfo cFileInfo = (CClassInfo)ClassFile.Constants[methodRef.ClassIndex];
+                                cFile = ClassFileManager.GetClassFile(cFileInfo.Name);
+                            }
+                            method = JavaHelper.ResolveMethod(cFile.Name, methodRef.Name, methodRef.Descriptor);
+
+                            if (method.HasFlag(MethodInfoFlag.Native))
+                            {
+                                Program.StackTracePrinter.PrintMethodCall(method, arguments);
+                                NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
                                 {
-                                    Program.StackTracePrinter.PrintMethodCall(method, arguments);
-                                    NativeMethodFrame nativeMethodFrame = new NativeMethodFrame(method)
-                                    {
-                                        Args = arguments
-                                    };
-                                    nativeMethodFrame.Execute();
-                                }
-                                else
-                                {
-                                    Program.StackTracePrinter.PrintMethodCall(method, arguments);
-                                    MethodFrame methodFrame = new MethodFrame(method);
-                                    arguments.CopyTo(methodFrame.Locals, 0);
-                                    methodFrame.Execute();
-                                }
+                                    Args = arguments
+                                };
+                                nativeMethodFrame.Execute();
+                            }
+                            else
+                            {
+                                Program.StackTracePrinter.PrintMethodCall(method, arguments);
+                                MethodFrame methodFrame = new MethodFrame(method);
+                                arguments.CopyTo(methodFrame.Locals, 0);
+                                methodFrame.Execute();
                             }
 
                         }
@@ -1591,7 +1663,18 @@ namespace JavaVirtualMachine
 
                             if (arguments[0] == 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NullPointerException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NullPointerException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
 
                             ClassFile cFile = Heap.GetObject(arguments[0]).ClassFile;
@@ -1603,7 +1686,18 @@ namespace JavaVirtualMachine
                                 cFile = cFile.SuperClass;
                                 if (cFile == null)
                                 {
-                                    JavaHelper.ThrowJavaException("java/lang/AbstractMethodError");
+                                    foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/AbstractMethodError"))
+                                    {
+                                        if (e == 0)
+                                        {
+                                            yield return e;
+                                        }
+                                        else
+                                        {
+                                            exception = e;
+                                        }
+                                    }
+                                    break;
                                 }
                             }
 
@@ -1642,7 +1736,18 @@ namespace JavaVirtualMachine
                             int count = Utility.PopInt(Stack, ref sp);
                             if (count < 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NegativeArraySizeException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NegativeArraySizeException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
                             switch ((ArrayTypeCodes)aType)
                             {
@@ -1683,7 +1788,18 @@ namespace JavaVirtualMachine
                             int count = Utility.PopInt(Stack, ref sp);
                             if (count < 0)
                             {
-                                JavaHelper.ThrowJavaException("java/lang/NegativeArraySizeException");
+                                foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/NegativeArraySizeException"))
+                                {
+                                    if (e == 0)
+                                    {
+                                        yield return e;
+                                    }
+                                    else
+                                    {
+                                        exception = e;
+                                    }
+                                }
+                                break;
                             }
 
                             Utility.Push(ref Stack, ref sp, Heap.CreateArray(4, count, ClassObjectManager.GetClassObjectAddr(type.Name)));
@@ -1752,7 +1868,18 @@ namespace JavaVirtualMachine
                                 {
                                     if (!instanceOf)
                                     {
-                                        JavaHelper.ThrowJavaException("java/lang/ClassCastException");
+                                        foreach (int e in JavaHelper.ThrowJavaExceptionYielding("java/lang/ClassCastException"))
+                                        {
+                                            if (e == 0)
+                                            {
+                                                yield return e;
+                                            }
+                                            else
+                                            {
+                                                exception = e;
+                                            }
+                                        }
+                                        break;
                                     }
                                 }
                             }
@@ -1807,50 +1934,58 @@ namespace JavaVirtualMachine
                         throw new InvalidOperationException($"Missing Op Code: 0x{opCode:X2} = {Enum.GetName(typeof(OpCodes), opCode)}");
                 }
 
-            }
-                catch (JavaException ex)
+                if (exception != 0)
                 {
-                bool handled = false;
-                for (int i = 0; i < ExceptionTable.Length; i++)
-                {
-                    ExceptionHandlerInfo handler = ExceptionTable[i];
-                    if ((handler.CatchType == 0 || ex.ClassFile.IsSubClassOf(ClassFileManager.GetClassFile(handler.CatchClassType.Name))) &&
-                        ip >= handler.StartPc && ip < handler.EndPc)
+                    bool handled = false;
+                    ClassFile exceptionCFile = Heap.GetObject(exception).ClassFile;
+
+                    for (int i = 0; i < ExceptionTable.Length; i++)
                     {
-                        ip = handler.HandlerPc;
-                        handled = true;
-                        break;
+                        ExceptionHandlerInfo handler = ExceptionTable[i];
+                        if ((handler.CatchType == 0 || exceptionCFile.IsSubClassOf(ClassFileManager.GetClassFile(handler.CatchClassType.Name))) &&
+                            ip >= handler.StartPc && ip < handler.EndPc)
+                        {
+                            ip = handler.HandlerPc;
+                            handled = true;
+                            break;
+                        }
                     }
-                }
-                if (!handled)
-                {
-                    Program.StackTracePrinter.PrintMethodThrewException(MethodInfo, ex);
-                    if (Program.MethodFrameStack.Count > 1)
+
+                    if (handled)
                     {
-                        MethodFrame parentFrame = Program.MethodFrameStack.Peek(1);
-                        parentFrame.Stack = new int[parentFrame.Stack.Length];
-                        parentFrame.sp = 1;
-                        parentFrame.Stack[0] = Utility.PopInt(Stack, ref sp);
+                        exception = 0;
                     }
-                    Program.MethodFrameStack.Pop();
-                    throw;
+                    else
+                    {
+                        Program.StackTracePrinter.PrintMethodThrewException(MethodInfo, exception);
+                        if (Program.MethodFrameStack.Count > 1)
+                        {
+                            MethodFrame parentFrame = Program.MethodFrameStack.Peek(1);
+                            parentFrame.Stack = new int[parentFrame.Stack.Length];
+                            parentFrame.sp = 1;
+                            parentFrame.Stack[0] = Utility.PopInt(Stack, ref sp);
+                        }
+                        Program.MethodFrameStack.Pop();
+                        yield return exception;
+                    }
                 }
             }
         }
+
+        private short readShort(ReadOnlySpan<byte> code, ref int instructionPointer)
+        {
+            byte chomp = code[instructionPointer++]; //Larger byte
+            byte nibble = code[instructionPointer++]; //Smaller byte
+            return (short)((chomp << 8) | nibble);
+        }
+
+        private int readInt(ReadOnlySpan<byte> code, ref int instructionPointer)
+        {
+            byte byte0 = code[instructionPointer++];
+            byte byte1 = code[instructionPointer++];
+            byte byte2 = code[instructionPointer++];
+            byte byte3 = code[instructionPointer++];
+            return ((byte0 << 24) | (byte1 << 16) | (byte2 << 8) | byte3);
+        }
     }
-    private short readShort(ReadOnlySpan<byte> code, ref int instructionPointer)
-    {
-        byte chomp = code[instructionPointer++]; //Larger byte
-        byte nibble = code[instructionPointer++]; //Smaller byte
-        return (short)((chomp << 8) | nibble);
-    }
-    private int readInt(ReadOnlySpan<byte> code, ref int instructionPointer)
-    {
-        byte byte0 = code[instructionPointer++];
-        byte byte1 = code[instructionPointer++];
-        byte byte2 = code[instructionPointer++];
-        byte byte3 = code[instructionPointer++];
-        return ((byte0 << 24) | (byte1 << 16) | (byte2 << 8) | byte3);
-    }
-}
 }

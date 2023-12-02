@@ -19,6 +19,6 @@ namespace JavaVirtualMachine.StackTracePrinters
 
         public void PrintMethodReturn(MethodInfo method) { }
 
-        public void PrintMethodThrewException(MethodInfo method, JavaException exception) { }
+        public void PrintMethodThrewException(MethodInfo method, int exception) { }
     }
 }

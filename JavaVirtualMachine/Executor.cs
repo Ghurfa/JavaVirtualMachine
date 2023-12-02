@@ -13,6 +13,7 @@ namespace JavaVirtualMachine
 {
     internal static class Executor
     {
+
         public static IEnumerator<int> ExecuteNative()
         {
             MethodFrame thisFrame = new(null);
