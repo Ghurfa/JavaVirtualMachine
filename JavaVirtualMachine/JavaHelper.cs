@@ -96,38 +96,20 @@ namespace JavaVirtualMachine
             Program.MethodFrameStack.Pop();
         }
 
-        public static int RunJavaFunctionYielding(MethodInfo methodInfo, params int[] arguments)
-        {
-            Program.StackTracePrinter.PrintMethodCall(methodInfo, arguments);
-            if (methodInfo.HasFlag(MethodInfoFlag.Native))
-            {
-                NativeMethodFrame methodFrame = new NativeMethodFrame(methodInfo);
-                arguments.CopyTo(methodFrame.Locals, 0);
-            }
-            else
-            {
-                MethodFrame methodFrame = new MethodFrame(methodInfo);
-                arguments.CopyTo(methodFrame.Locals, 0);
-            }
-            return 0;
-        }
-
-        public static IEnumerable<int> ThrowJavaExceptionYielding(string type)
-        {
-            int exceptionCFileIdx = ClassFileManager.GetClassFileIndex(type);
-            ClassFile exceptionCFile = ClassFileManager.ClassFiles[exceptionCFileIdx];
-            int exceptionObjRef = Heap.CreateObject(exceptionCFileIdx);
-
-            MethodInfo initMethod = exceptionCFile.MethodDictionary[("<init>", "()V")];
-            RunJavaFunctionYielding(initMethod, exceptionObjRef);
-            yield return 0;
-
-            MethodFrame frame = Program.MethodFrameStack.Peek();
-            frame.Stack = new int[frame.Stack.Length];
-            frame.Stack[0] = exceptionObjRef;
-            frame.sp = 1;
-            yield return exceptionObjRef;
-        }
+        //public static void RunJavaFunction(MethodInfo methodInfo, params int[] arguments)
+        //{
+        //    Program.StackTracePrinter.PrintMethodCall(methodInfo, arguments);
+        //    if (methodInfo.HasFlag(MethodInfoFlag.Native))
+        //    {
+        //        NativeMethodFrame methodFrame = new NativeMethodFrame(methodInfo);
+        //        arguments.CopyTo(methodFrame.Locals, 0);
+        //    }
+        //    else
+        //    {
+        //        MethodFrame methodFrame = new MethodFrame(methodInfo);
+        //        arguments.CopyTo(methodFrame.Locals, 0);
+        //    }
+        //}
 
         public static bool IsArray(this CClassInfo classInfo)
         {
@@ -232,6 +214,7 @@ namespace JavaVirtualMachine
             }
             return false;
         }
+
         public static string PrimitiveFullName(string name)
         {
             switch (name)
@@ -276,10 +259,12 @@ namespace JavaVirtualMachine
         {
             return ClassObjectName(Heap.GetObject(classObjAddr));
         }
+
         public static string ClassObjectName(HeapObject classObj)
         {
             return ReadJavaString(classObj.GetField("name", "Ljava/lang/String;"));
         }
+
         public static string ReadDescriptorArg(string descriptor, ref int i)
         {
             int startI = i;
@@ -294,6 +279,7 @@ namespace JavaVirtualMachine
             i++;
             return descriptor.Substring(startI, i - startI);
         }
+
         public static MethodInfo ResolveMethod(string className, string methodName, string methodDescriptor)
         {
             ClassFile cFile = ClassFileManager.GetClassFile(className);
