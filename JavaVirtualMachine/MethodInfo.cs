@@ -27,7 +27,7 @@ namespace JavaVirtualMachine
         public ushort DescriptorIndex { get; }
         public ushort AttributesCount { get; }
         public AttributeInfo[] Attributes;
-        public ushort MaxStack;
+        public ushort MaxStack = 1;
         public ushort MaxLocals;
         public CodeAttribute CodeAttribute { get; }
         public ExceptionsAttribute ExceptionsAttribute { get; }

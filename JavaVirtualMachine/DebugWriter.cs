@@ -185,22 +185,15 @@
             }
         }
 
-        public static void PrintStack()
-        {
-            MethodFrame[] stack = new MethodFrame[Program.MethodFrameStack.Count];
-            PrintStack(stack);
-        }
-
         public static void PrintStack(MethodFrame[] stack)
         {
             Console.ForegroundColor = DebugDefaultColor;
             Console.WriteLine("\nStack:");
-            Program.MethodFrameStack.CopyTo(stack, 0);
             for (int i = stack.Length - 1; i >= 0; i--)
             {
                 Console.CursorLeft = (stack.Length - 1 - i) * Spacing;
                 MethodFrame frame = stack[i];
-                Console.WriteLine($"{frame.ClassFile.Name}.{frame.MethodInfo.Name}{frame.MethodInfo.Descriptor}");
+                Console.WriteLine($"{frame.Method.ClassFile.Name}.{frame.Method.Name}{frame.Method.Descriptor}");
             }
         }
 

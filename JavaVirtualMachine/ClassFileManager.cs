@@ -1,4 +1,5 @@
 ﻿using JavaVirtualMachine.ConstantPoolItems;
+using System.Data;
 
 namespace JavaVirtualMachine
 {
@@ -38,6 +39,25 @@ namespace JavaVirtualMachine
             return GetClassFileIndex(name);
         }
 
+        public static MethodInfo? TryGetClassFileIndex(string key, out int classFileIndex)
+        {
+            try
+            {
+                classFileIndex = GetClassFileIndex(key);
+                return null;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                int exCFileIdx = GetClassFileIndex("java/lang/ClassNotFoundException");
+                ClassFile exCFile = ClassFiles[exCFileIdx];
+                MethodInfo initMethodInfo = exCFile.MethodDictionary[("<init>", "(Ljava/lang/String;)V")];
+                int messageAddr = JavaHelper.CreateJavaStringLiteral($"Could not find class {key}");
+                classFileIndex = default;
+
+                return Executor.ThrowJavaException(initMethodInfo, messageAddr);
+            }
+        }
+
         public static int GetClassFileIndex(string key)
         {
             if (key.Last() == ';')
@@ -46,52 +66,33 @@ namespace JavaVirtualMachine
 
             //todo: check permissions
 
-            try
+            if (StrToClassFileInfo.TryGetValue(key, out (string path, int classFileIndex, bool isStaticLoaded) classFileEntry))
             {
-                if (StrToClassFileInfo.TryGetValue(key, out (string path, int classFileIndex, bool isStaticLoaded) classFileEntry))
+                bool isLoaded = classFileEntry.classFileIndex != -1;
+                if (!isLoaded)
                 {
-                    bool isLoaded = classFileEntry.classFileIndex != -1;
-                    if (!isLoaded)
-                    {
-                        ClassFile classFile = new ClassFile(StrToClassFileInfo[key].path + key + ".class");
-                        _classFiles.Add(classFile);
-
-                        int index = _classFiles.Count - 1;
-                        StrToClassFileInfo[key] = (RuntimePath, index, false);
-                        return index;
-                    }
-                    else
-                    {
-                        return classFileEntry.classFileIndex;
-                    }
-                }
-                else
-                {
-                    //Java class file
-                    string filePath = RuntimePath + key + ".class";
-                    ClassFile classFile = new ClassFile(filePath);
+                    ClassFile classFile = new ClassFile(StrToClassFileInfo[key].path + key + ".class");
                     _classFiles.Add(classFile);
 
                     int index = _classFiles.Count - 1;
-                    StrToClassFileInfo.Add(key, (RuntimePath, index, false));
+                    StrToClassFileInfo[key] = (RuntimePath, index, false);
                     return index;
                 }
-            }
-            catch (DirectoryNotFoundException)
-            {
-                int exCFileIdx = GetClassFileIndex("java/lang/ClassNotFoundException");
-                int exAddr = Heap.CreateObject(exCFileIdx);
-                ClassFile exCFile = ClassFiles[exCFileIdx];
-
-                MethodInfo initMethodInfo = exCFile.MethodDictionary[("<init>", "(Ljava/lang/String;)V")];
-                int messageAddr = JavaHelper.CreateJavaStringLiteral($"Could not find class {key}");
-                JavaHelper.RunJavaFunction(initMethodInfo, exAddr, messageAddr);
-                if (Program.MethodFrameStack.Count > 0)
+                else
                 {
-                    MethodFrame parentFrame = Program.MethodFrameStack.Peek();
-                    Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, exAddr); //push address of exception onto parent stack
+                    return classFileEntry.classFileIndex;
                 }
-                throw new JavaException(exCFile, $"Could not find class {key}");
+            }
+            else
+            {
+                //Java class file
+                string filePath = RuntimePath + key + ".class";
+                ClassFile classFile = new ClassFile(filePath);
+                _classFiles.Add(classFile);
+
+                int index = _classFiles.Count - 1;
+                StrToClassFileInfo.Add(key, (RuntimePath, index, false));
+                return index;
             }
         }
 
@@ -100,7 +101,7 @@ namespace JavaVirtualMachine
             return ClassFiles[GetClassFileIndex(name)];
         }
 
-        public static void InitializeClass(string key)
+        public static MethodInfo? InitializeClass(string key)
         {
             ClassFile cFile = GetClassFile(key);
             while (cFile != null)
@@ -111,11 +112,13 @@ namespace JavaVirtualMachine
                     
                     if (cFile.MethodDictionary.TryGetValue(("<clinit>", "()V"), out MethodInfo classInitMethod))
                     {
-                        JavaHelper.RunJavaFunction(classInitMethod);
+                        return Executor.RunJavaFunction(classInitMethod);
                     }
                 }
                 cFile = cFile.SuperClass;
             }
+
+            return null;
         }
     }
 }

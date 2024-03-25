@@ -37,66 +37,65 @@ namespace JavaVirtualMachine
             return num.SwapEndian();
         }
 
-        public static void Push(ref int[] stack, ref int stackPointer, int value)
+        public static void Push(ref Span<int> stack, ref int stackPointer, int value)
         {
             stack[stackPointer++] = value;
         }
-        public static void Push(ref int[] stack, ref int stackPointer, int[] values)
+        public static void Push(ref Span<int> stack, ref int stackPointer, Span<int> values)
         {
             for (int i = 0; i < values.Length; i++)
             {
                 stack[stackPointer++] = values[i];
             }
         }
-        public static void Push(ref int[] stack, ref int stackPointer, long value)
+        public static void Push(ref Span<int> stack, ref int stackPointer, long value)
         {
             stack[stackPointer++] = (int)(value >> (8 * sizeof(int)));
             stack[stackPointer++] = (int)(value & 0xFFFFFFFF);
         }
-        public static void Push(ref int[] stack, ref int stackPointer, float value)
+        public static void Push(ref Span<int> stack, ref int stackPointer, float value)
         {
             stack[stackPointer++] = JavaHelper.FloatToStoredFloat(value);
         }
-        public static void Push(ref int[] stack, ref int stackPointer, double value)
+        public static void Push(ref Span<int> stack, ref int stackPointer, double value)
         {
             Push(ref stack, ref stackPointer, JavaHelper.DoubleToStoredDouble(value));
         }
 
-        public static int PopInt(int[] stack, ref int stackPointer)
+        public static int PopInt(Span<int> stack, ref int stackPointer)
         {
             return stack[--stackPointer];
         }
-        public static int PeekInt(int[] stack, int stackPointer, int offset = 0)
+
+        public static int PeekInt(Span<int> stack, int stackPointer, int offset = 0)
         {
             return stack[stackPointer - 1 - offset];
         }
-        public static long PeekLong(int[] stack, int stackPointer, int offset = 0)
+
+        public static long PeekLong(Span<int> stack, int stackPointer, int offset = 0)
         {
             int lowInt = PeekInt(stack, stackPointer, offset);
             int highInt = PeekInt(stack, stackPointer, offset + 1);
             return (((long)highInt) << 32) | (lowInt & 0xFFFFFFFF);
         }
-        public static long PopLong(int[] stack, ref int stackPointer)
+
+        public static long PopLong(Span<int> stack, ref int stackPointer)
         {
             int lowInt = PopInt(stack, ref stackPointer);
             int highInt = PopInt(stack, ref stackPointer);
             return (((long)highInt) << 32) | (lowInt & 0xFFFFFFFF);
         }
-        public static float PopFloat(int[] stack, ref int stackPointer)
+
+        public static float PopFloat(Span<int> stack, ref int stackPointer)
         {
             int storedValue = stack[--stackPointer];
             return JavaHelper.StoredFloatToFloat(storedValue);
         }
-        public static double PopDouble(int[] stack, ref int stackPointer)
+
+        public static double PopDouble(Span<int> stack, ref int stackPointer)
         {
             long storedValue = PopLong(stack, ref stackPointer);
             return JavaHelper.StoredDoubleToDouble(storedValue);
-        }
-
-        public static MethodFrame Peek(this Stack<MethodFrame> stack, int depth)
-        {
-            MethodFrame[] asArray = stack.ToArray();
-            return asArray[depth];
         }
 
         public static long ToLong(this (int high, int low) pair)

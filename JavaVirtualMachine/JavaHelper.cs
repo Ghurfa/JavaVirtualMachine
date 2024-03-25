@@ -67,49 +67,28 @@ namespace JavaVirtualMachine
 
         public static void ReturnValue(int retVal)
         {
-            MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;
+            MethodFrame currFrame = Executor.MethodFrameStack.Peek();
+            MethodInfo currMethod = currFrame.Method;
             Program.StackTracePrinter.PrintMethodReturn(currMethod, retVal);
-            Program.MethodFrameStack.Pop();
-            if (Program.MethodFrameStack.Count >= 0)
-            {
-                MethodFrame parentFrame = Program.MethodFrameStack.Peek();
-                Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, retVal);
-            }
+            Executor.Stack.Span[currFrame.BaseOffset] = retVal;
         }
 
         public static void ReturnLargeValue(long retVal)
         {
-            MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;
+            MethodFrame currFrame = Executor.MethodFrameStack.Peek();
+            MethodInfo currMethod = currFrame.Method;
             Program.StackTracePrinter.PrintMethodReturn(currMethod, retVal);
-            Program.MethodFrameStack.Pop();
-            if (Program.MethodFrameStack.Count >= 0)
-            {
-                MethodFrame parentFrame = Program.MethodFrameStack.Peek();
-                Utility.Push(ref parentFrame.Stack, ref parentFrame.sp, retVal);
-            }
+            (int high, int low) = Utility.Split(retVal);
+            Executor.Stack.Span[currFrame.BaseOffset] = high;
+            Executor.Stack.Span[currFrame.BaseOffset + 1] = low;
         }
 
         public static void ReturnVoid()
         {
-            MethodInfo currMethod = Program.MethodFrameStack.Peek().MethodInfo;
+            MethodFrame currFrame = Executor.MethodFrameStack.Peek();
+            MethodInfo currMethod = currFrame.Method;
             Program.StackTracePrinter.PrintMethodReturn(currMethod);
-            Program.MethodFrameStack.Pop();
         }
-
-        //public static void RunJavaFunction(MethodInfo methodInfo, params int[] arguments)
-        //{
-        //    Program.StackTracePrinter.PrintMethodCall(methodInfo, arguments);
-        //    if (methodInfo.HasFlag(MethodInfoFlag.Native))
-        //    {
-        //        NativeMethodFrame methodFrame = new NativeMethodFrame(methodInfo);
-        //        arguments.CopyTo(methodFrame.Locals, 0);
-        //    }
-        //    else
-        //    {
-        //        MethodFrame methodFrame = new MethodFrame(methodInfo);
-        //        arguments.CopyTo(methodFrame.Locals, 0);
-        //    }
-        //}
 
         public static bool IsArray(this CClassInfo classInfo)
         {

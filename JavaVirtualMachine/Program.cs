@@ -15,7 +15,6 @@ namespace JavaVirtualMachine
 
     internal class Program
     {
-        public static Stack<MethodFrame> MethodFrameStack = new Stack<MethodFrame>();
         public static Stopwatch Stopwatch = new Stopwatch();
         public static Config Configuration { get; private set; }
         public static IStackTracePrinter StackTracePrinter = EmptyStackTracePrinter.Instance;
@@ -107,43 +106,30 @@ namespace JavaVirtualMachine
 
             ClassFile systemCFile = ClassFileManager.GetClassFile("java/lang/System");
             MethodInfo initSystemClassMethod = systemCFile.MethodDictionary[("initializeSystemClass", "()V")];
-            try
+
+            Executor.BeginExecution(initSystemClassMethod);
+            if (Executor.ActiveException != 0)
             {
-                JavaHelper.RunJavaFunction(initSystemClassMethod);
-            }
-            catch (JavaException ex)
-            {
-                if (ex.ClassFile.Name != "java/lang/IllegalStateException") throw;
+                throw new NotImplementedException();
             }
 
             int mainProgCFileIdx = ClassFileManager.GetClassFileIndex("Program");
             ClassFile mainProg = ClassFileManager.ClassFiles[mainProgCFileIdx];
             int mainProgObjAddr = Heap.CreateObject(mainProgCFileIdx);
             MethodInfo mainProgInit = mainProg.MethodDictionary[("<init>", "()V")];
-            try
+            
+            Executor.BeginExecution(mainProgInit, mainProgObjAddr);
+            if (Executor.ActiveException != 0)
             {
-                JavaHelper.RunJavaFunction(mainProgInit, mainProgObjAddr);
-            }
-            catch (JavaException ex)
-            {
-                DebugWriter.WriteDebugMessage($"Program ended with {ex.ClassFile.Name} ({ex.Message})");
-                DebugWriter.PrintStack(ex.Stack);
+                throw new NotImplementedException();
             }
 
-            foreach (var method in mainProg.MethodDictionary)
+            if (mainProg.MethodDictionary.TryGetValue(("<clinit>", "()V"), out MethodInfo clinitMethod))
             {
-                if (method.Key == ("<clinit>", "()V"))
+                Executor.BeginExecution(clinitMethod, mainProgObjAddr);
+                if (Executor.ActiveException != 0)
                 {
-                    try
-                    {
-                        JavaHelper.RunJavaFunction(method.Value, mainProgObjAddr);
-                    }
-                    catch (JavaException ex)
-                    {
-                        DebugWriter.WriteDebugMessage($"Program ended with {ex.ClassFile.Name} ({ex.Message})");
-                        DebugWriter.PrintStack(ex.Stack);
-                    }
-                    break;
+                    throw new NotImplementedException();
                 }
             }
 
@@ -151,16 +137,13 @@ namespace JavaVirtualMachine
             {
                 if (method.Key.name == "main")
                 {
-                    try
+                    Executor.BeginExecution(method.Value, mainProgObjAddr, 0);
+                    if (Executor.ActiveException != 0)
                     {
-                        JavaHelper.RunJavaFunction(method.Value, mainProgObjAddr, 0);
+                        throw new NotImplementedException();
+                        //DebugWriter.WriteDebugMessage($"Program ended with {ex.ClassFile.Name} ({ex.Message})");
+                        //DebugWriter.PrintStack(ex.Stack);
                     }
-                    catch (JavaException ex)
-                    {
-                        DebugWriter.WriteDebugMessage($"Program ended with {ex.ClassFile.Name} ({ex.Message})");
-                        DebugWriter.PrintStack(ex.Stack);
-                    }
-                    break;
                 }
             }
         }

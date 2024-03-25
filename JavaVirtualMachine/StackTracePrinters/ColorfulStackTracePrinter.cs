@@ -73,8 +73,7 @@ namespace JavaVirtualMachine.StackTracePrinters
             Depth--;
             PrintWithColor(DebugDefaultColor, LeftPad + "Returned ");
 
-            MethodInfo methodInfo = Program.MethodFrameStack.Peek().MethodInfo;
-            string returnType = methodInfo.Descriptor.Split(')')[1];
+            string returnType = method.Descriptor.Split(')')[1];
             PrintWideValue(returnType[0], returnValue);
             PrintWithColor(DebugDefaultColor, "\n");
         }
