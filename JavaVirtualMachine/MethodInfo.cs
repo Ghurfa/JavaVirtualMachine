@@ -27,7 +27,7 @@ namespace JavaVirtualMachine
         public ushort DescriptorIndex { get; }
         public ushort AttributesCount { get; }
         public AttributeInfo[] Attributes;
-        public ushort MaxStack = 1;
+        public ushort MaxStack;
         public ushort MaxLocals;
         public CodeAttribute CodeAttribute { get; }
         public ExceptionsAttribute ExceptionsAttribute { get; }
@@ -96,6 +96,12 @@ namespace JavaVirtualMachine
             }
 
             ClassFile = classFile;
+
+            if (HasFlag(MethodInfoFlag.Native))
+            {
+                MaxStack = 1;
+                MaxLocals = (ushort)(this.NumOfArgs() + (HasFlag(MethodInfoFlag.Static) ? 0 : 1));
+            }
         }
         public bool HasFlag(MethodInfoFlag flag)
         {

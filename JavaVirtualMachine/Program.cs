@@ -110,7 +110,9 @@ namespace JavaVirtualMachine
             Executor.BeginExecution(initSystemClassMethod);
             if (Executor.ActiveException != 0)
             {
-                throw new NotImplementedException();
+                // Todo: Print exception type, message, stack trace
+                DebugWriter.WriteDebugMessage("Program terminated with an exception");
+                return;
             }
 
             int mainProgCFileIdx = ClassFileManager.GetClassFileIndex("Program");
@@ -121,7 +123,9 @@ namespace JavaVirtualMachine
             Executor.BeginExecution(mainProgInit, mainProgObjAddr);
             if (Executor.ActiveException != 0)
             {
-                throw new NotImplementedException();
+                // Todo: Print exception type, message, stack trace
+                DebugWriter.WriteDebugMessage("Program terminated with an exception");
+                return;
             }
 
             if (mainProg.MethodDictionary.TryGetValue(("<clinit>", "()V"), out MethodInfo clinitMethod))
@@ -129,7 +133,9 @@ namespace JavaVirtualMachine
                 Executor.BeginExecution(clinitMethod, mainProgObjAddr);
                 if (Executor.ActiveException != 0)
                 {
-                    throw new NotImplementedException();
+                    // Todo: Print exception type, message, stack trace
+                    DebugWriter.WriteDebugMessage("Program terminated with an exception");
+                    return;
                 }
             }
 
@@ -140,9 +146,9 @@ namespace JavaVirtualMachine
                     Executor.BeginExecution(method.Value, mainProgObjAddr, 0);
                     if (Executor.ActiveException != 0)
                     {
-                        throw new NotImplementedException();
-                        //DebugWriter.WriteDebugMessage($"Program ended with {ex.ClassFile.Name} ({ex.Message})");
-                        //DebugWriter.PrintStack(ex.Stack);
+                        // Todo: Print exception type, message, stack trace
+                        DebugWriter.WriteDebugMessage("Program terminated with an exception");
+                        return;
                     }
                 }
             }

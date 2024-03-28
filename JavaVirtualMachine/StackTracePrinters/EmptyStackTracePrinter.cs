@@ -11,7 +11,7 @@ namespace JavaVirtualMachine.StackTracePrinters
 
         }
 
-        public void PrintMethodCall(MethodInfo method, int[] args, CInterfaceMethodRefInfo? interfaceMethod = null) { }
+        public void PrintMethodCall(MethodInfo method, Span<int> args, CInterfaceMethodRefInfo? interfaceMethod = null) { }
 
         public void PrintMethodReturn(MethodInfo method, int returnValue) { }
 

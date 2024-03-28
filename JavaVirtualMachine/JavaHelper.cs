@@ -7,8 +7,8 @@ namespace JavaVirtualMachine
     public static class JavaHelper
     {
         public static int NumOfArgs(this MethodInfo method) => NumOfArgs(method.Descriptor);
-        public static int NumOfArgs(this CMethodRefInfo methodRef) => NumOfArgs(methodRef.Descriptor);
-        public static int NumOfArgs(this CInterfaceMethodRefInfo interfaceMethodRef) => NumOfArgs(interfaceMethodRef.Descriptor);
+        public static int NumOfExplicitArgs(this CMethodRefInfo methodRef) => NumOfArgs(methodRef.Descriptor);
+        public static int NumOfExplicitArgs(this CInterfaceMethodRefInfo interfaceMethodRef) => NumOfArgs(interfaceMethodRef.Descriptor);
         public static int NumOfArgs(string descriptor)
         {
             int numOfArgs = 0;
@@ -70,7 +70,7 @@ namespace JavaVirtualMachine
             MethodFrame currFrame = Executor.MethodFrameStack.Peek();
             MethodInfo currMethod = currFrame.Method;
             Program.StackTracePrinter.PrintMethodReturn(currMethod, retVal);
-            Executor.Stack.Span[currFrame.BaseOffset] = retVal;
+            Executor.GlobalStack.Span[currFrame.BaseOffset] = retVal;
         }
 
         public static void ReturnLargeValue(long retVal)
@@ -79,8 +79,8 @@ namespace JavaVirtualMachine
             MethodInfo currMethod = currFrame.Method;
             Program.StackTracePrinter.PrintMethodReturn(currMethod, retVal);
             (int high, int low) = Utility.Split(retVal);
-            Executor.Stack.Span[currFrame.BaseOffset] = high;
-            Executor.Stack.Span[currFrame.BaseOffset + 1] = low;
+            Executor.GlobalStack.Span[currFrame.BaseOffset] = high;
+            Executor.GlobalStack.Span[currFrame.BaseOffset + 1] = low;
         }
 
         public static void ReturnVoid()

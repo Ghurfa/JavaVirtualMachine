@@ -4,7 +4,7 @@ namespace JavaVirtualMachine.StackTracePrinters
 {
     internal class ColorfulStackTracePrinter : IStackTracePrinter
     {
-        public static int Depth = 0;
+        public int Depth = 0;
         const int Spacing = 2;
         const byte DebugDefaultColor = (byte)ConsoleColor.DarkGray;
         const byte NativeMethodColor = (byte)ConsoleColor.Green;
@@ -40,7 +40,7 @@ namespace JavaVirtualMachine.StackTracePrinters
             PrintWithColor = printWithColor;
         }
 
-        public void PrintMethodCall(MethodInfo method, int[] args, CInterfaceMethodRefInfo? interfaceMethod = null)
+        public void PrintMethodCall(MethodInfo method, Span<int> args, CInterfaceMethodRefInfo? interfaceMethod = null)
         {
             byte methodColor = method.HasFlag(MethodInfoFlag.Native) ? NativeMethodColor : DebugDefaultColor;
 
@@ -49,7 +49,7 @@ namespace JavaVirtualMachine.StackTracePrinters
 
             if (interfaceMethod != null)
             {
-                PrintWithColor(methodColor,$"   (interface {interfaceMethod.ClassName})\n");
+                PrintWithColor(methodColor, $"   (interface {interfaceMethod.ClassName})\n");
             }
             else
             {
@@ -60,6 +60,10 @@ namespace JavaVirtualMachine.StackTracePrinters
 
         public void PrintMethodReturn(MethodInfo method, int returnValue)
         {
+            if (((StackTracePrinters.ColorfulStackTracePrinter)Program.StackTracePrinter).Depth != Executor.MethodFrameStack.Count)
+            {
+
+            }
             Depth--;
             PrintWithColor(DebugDefaultColor, LeftPad + "Returned ");
 
@@ -70,6 +74,10 @@ namespace JavaVirtualMachine.StackTracePrinters
 
         public void PrintMethodReturn(MethodInfo method, long returnValue)
         {
+            if (((StackTracePrinters.ColorfulStackTracePrinter)Program.StackTracePrinter).Depth != Executor.MethodFrameStack.Count)
+            {
+
+            }
             Depth--;
             PrintWithColor(DebugDefaultColor, LeftPad + "Returned ");
 
@@ -80,20 +88,36 @@ namespace JavaVirtualMachine.StackTracePrinters
 
         public void PrintMethodReturn(MethodInfo method)
         {
+            if (((StackTracePrinters.ColorfulStackTracePrinter)Program.StackTracePrinter).Depth != Executor.MethodFrameStack.Count)
+            {
+
+            }
             Depth--;
             PrintWithColor(DebugDefaultColor, LeftPad + "Returned void\n");
         }
 
         public void PrintMethodThrewException(MethodInfo method, int exception)
         {
+            if (((StackTracePrinters.ColorfulStackTracePrinter)Program.StackTracePrinter).Depth != Executor.MethodFrameStack.Count)
+            {
+
+            }
             Depth--;
             HeapObject exceptionObj = Heap.GetObject(exception);
             string type = exceptionObj.ClassFile.Name;
-            string message = JavaHelper.ReadJavaString(exceptionObj.GetField("detailmessage", "Ljava/lang/String;"));
-            PrintWithColor(ExceptionThrownColor, $"{LeftPad}Threw {type} ({message})\n");
+            int messageObj = exceptionObj.GetField("detailMessage", "Ljava/lang/String;");
+            if (messageObj != 0)
+            {
+                string message = JavaHelper.ReadJavaString(messageObj);
+                PrintWithColor(ExceptionThrownColor, $"{LeftPad}Threw {type} ({message})\n");
+            }
+            else
+            {
+                PrintWithColor(ExceptionThrownColor, $"{LeftPad}Threw {type}\n");
+            }
         }
 
-        private void PrintArgs(byte methodColor, string descriptor, bool isStatic, int[] args)
+        private void PrintArgs(byte methodColor, string descriptor, bool isStatic, Span<int> args)
         {
             int argIndex = 0;
             int i;

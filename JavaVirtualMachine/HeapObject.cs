@@ -17,9 +17,19 @@ namespace JavaVirtualMachine
             OwnerHeap = heap;
         }
 
-        public int GetField(string name, string descriptor)
+        private int GetFieldSlot(string name, string descriptor)
         {
             int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
+            if (slot == -1)
+            {
+                throw new InvalidOperationException();
+            }
+            return slot;
+        }
+
+        public int GetField(string name, string descriptor)
+        {
+            int slot = GetFieldSlot(name, descriptor);
             return OwnerHeap.GetInt(Address + OwnerHeap.ObjectFieldOffset + OwnerHeap.ObjectFieldSize * slot);
         }
 
@@ -31,7 +41,7 @@ namespace JavaVirtualMachine
 
         public long GetFieldLong(string name, string descriptor)
         {
-            int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
+            int slot = GetFieldSlot(name, descriptor);
             return OwnerHeap.GetLong(Address + OwnerHeap.ObjectFieldOffset + OwnerHeap.ObjectFieldSize * slot);
         }
 
@@ -43,13 +53,13 @@ namespace JavaVirtualMachine
 
         public void SetField(string name, string descriptor, int value)
         {
-            int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
+            int slot = GetFieldSlot(name, descriptor);
             OwnerHeap.PutInt(Address + OwnerHeap.ObjectFieldOffset + (OwnerHeap.ObjectFieldSize * slot), value);
         }
 
         public void SetFieldLong(string name, string descriptor, long value)
         {
-            int slot = ClassFile.InstanceFields.FindIndex(x => x.Name == name && x.Descriptor == descriptor);
+            int slot = GetFieldSlot(name, descriptor);
             OwnerHeap.PutLong(Address + OwnerHeap.ObjectFieldOffset + (OwnerHeap.ObjectFieldSize * slot), value);
         }
 
