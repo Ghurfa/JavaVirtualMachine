@@ -13,11 +13,11 @@
             {
                 FileStream fileStream = File.OpenRead(file);
                 streams.Add(file, fileStream);
-                return false;
+                return true;
             }
             catch (FileNotFoundException)
             {
-                return true;
+                return false;
             }
         }
 

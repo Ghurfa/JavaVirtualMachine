@@ -106,7 +106,7 @@ namespace JavaVirtualMachine
                             Program.StackTracePrinter.PrintMethodThrewException(currFrame.Method, ActiveException);
                         }
 
-                        // Check if it is time to raise a pending exception
+                        // Check if we have a pending exception that is ready to be raised
 
                         if (pendingException != null && pendingException.Value.ThrowingFrame.BaseOffset == parentFrame.BaseOffset)
                         {
@@ -116,15 +116,15 @@ namespace JavaVirtualMachine
 
                         if (ActiveException != 0)
                         {
-                            // Handle the exception, whether it was a pending exception that was just raised or inherited from a child frame
+                            // Empty the parent frame's stack and push the exception onto it
 
                             parentFrame.Stack[0] = ActiveException;
                             parentFrame.SP = 1;
                         }
                         else
                         {
-                            // The just-popped frame has left its return value on the stack.
-                            // We need to increment parentFrame.SP to bring the value into the parent stack
+                            // The just-popped frame has left its return value on the stack, right above the parent stack
+                            // We need to increment parentFrame.SP to bring the return value into the parent stack
 
                             string returnType = currFrame.Method.Descriptor.Split(')')[1];
                             switch (returnType[0])
@@ -214,7 +214,7 @@ namespace JavaVirtualMachine
             int[] args = GlobalStack.Span.Slice(thisFrame.BaseOffset, methodInfo.MaxLocals).ToArray();
             HeapObject? thisObj = methodInfo.HasFlag(MethodInfoFlag.Static) ? default : Heap.GetObject(args[0]);
 
-            int PopInt()
+            int popInt()
             {
                 return thisFrame.Stack[--thisFrame.SP];
             }
@@ -457,7 +457,7 @@ namespace JavaVirtualMachine
                         
                         yield return RunJavaFunction(getPathMethod, args[1]);
 
-                        string path = JavaHelper.ReadJavaString(PopInt());
+                        string path = JavaHelper.ReadJavaString(popInt());
 
                         bool exception = false;
                         try
@@ -465,12 +465,16 @@ namespace JavaVirtualMachine
                             FileAttributes attributes = File.GetAttributes(path);
                             int ret = (int)attributes;
                             JavaHelper.ReturnValue(ret);
-
                         }
                         catch (FileNotFoundException)
                         {
                             exception = true;
                         }
+                        catch (DirectoryNotFoundException)
+                        {
+                            exception = true;
+                        }
+
                         if (exception)
                         {
                             yield return ThrowJavaException("java/io/FileNotFoundException");
@@ -878,9 +882,9 @@ namespace JavaVirtualMachine
                         ClassFile systemCFile = ClassFileManager.GetClassFile("java/lang/System");
                         MethodInfo getPropMethod = systemCFile.MethodDictionary[("getProperty", "(Ljava/lang/String;)Ljava/lang/String;")];
                         yield return RunJavaFunction(getPropMethod, JavaHelper.CreateJavaStringLiteral("java.library.path"));
-                        int libPathAddr = PopInt();
+                        int libPathAddr = popInt();
                         string libPath = JavaHelper.ReadJavaString(libPathAddr);
-                        JavaHelper.ReturnValue(JavaHelper.CreateJavaStringLiteral(libPath + name));
+                        JavaHelper.ReturnValue(JavaHelper.CreateJavaStringLiteral(libPath + '\\' + name));
                         yield break;
                     }
                 case ("java/lang/ClassLoader", "findLoadedClass0", "(Ljava/lang/String;)Ljava/lang/Class;"):
@@ -893,6 +897,7 @@ namespace JavaVirtualMachine
                         JavaHelper.ReturnVoid();
                         yield break;
                     }
+                case ("java/lang/ClassLoader$NativeLibrary", "load", "(Ljava/lang/String;ZZ)V"): // Idk what the second boolean is. Let's just ignore it
                 case ("java/lang/ClassLoader$NativeLibrary", "load", "(Ljava/lang/String;Z)V"):
                     {
                         ClassFile classLoaderCFile = ClassFileManager.GetClassFile("java/lang/ClassLoader");
@@ -1097,31 +1102,31 @@ namespace JavaVirtualMachine
                         MethodInfo setPropertyMethod = propertiesObject.ClassFile.MethodDictionary[("setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;")];
 
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("java.home"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Program.Configuration.javaHome)); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Program.Configuration.javaHome)); popInt();
                         //RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("java.library.path"),
                         //JavaHelper.CreateJavaStringLiteral(Environment.GetEnvironmentVariable("JAVA_HOME") + "\\bin")); PopInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("file.encoding"),
-                                                                            JavaHelper.CreateJavaStringLiteral("UTF16le")); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral("UTF16le")); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("os.arch"),
-                                                                            JavaHelper.CreateJavaStringLiteral("x64")); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral("x64")); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("os.name"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Environment.OSVersion.Platform.ToString())); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Environment.OSVersion.Platform.ToString())); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("os.version"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Environment.OSVersion.Version.Major.ToString())); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Environment.OSVersion.Version.Major.ToString())); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("file.separator"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Path.DirectorySeparatorChar.ToString())); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Path.DirectorySeparatorChar.ToString())); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("path.separator"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Path.PathSeparator.ToString())); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Path.PathSeparator.ToString())); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("line.separator"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Environment.NewLine)); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Environment.NewLine)); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("user.name"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Environment.UserName)); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Environment.UserName)); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("user.home"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Environment.GetFolderPath(Environment.SpecialFolder.Personal))); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Environment.GetFolderPath(Environment.SpecialFolder.Personal))); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("java.library.path"),
-                                                                            JavaHelper.CreateJavaStringLiteral(Program.Configuration.javaHome + @"\lib")); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral(Program.Configuration.javaHome + @"\lib")); popInt();
                         yield return RunJavaFunction(setPropertyMethod, args[0], JavaHelper.CreateJavaStringLiteral("sun.lang.ClassLoader.allowArraySyntax"),
-                                                                            JavaHelper.CreateJavaStringLiteral("true")); PopInt();
+                                                                            JavaHelper.CreateJavaStringLiteral("true")); popInt();
 
 
                         JavaHelper.ReturnValue(args[0]);
@@ -1344,7 +1349,7 @@ namespace JavaVirtualMachine
 
                         yield return RunJavaFunction(method, args.ToArray());
                         //methodFrame.Execute returns to this NativeMethodFrame's stack
-                        JavaHelper.ReturnValue(PopInt());
+                        JavaHelper.ReturnValue(popInt());
                         yield break;
                     }
                 case ("java/security/AccessController", "doPrivileged", "(Ljava/security/PrivilegedAction;Ljava/security/AccessControlContext;)Ljava/lang/Object;"):
@@ -1353,7 +1358,7 @@ namespace JavaVirtualMachine
                         MethodInfo method = privilegedAction.ClassFile.MethodDictionary[("run", "()Ljava/lang/Object;")];
 
                         yield return RunJavaFunction(method, args[0]);
-                        JavaHelper.ReturnValue(PopInt());
+                        JavaHelper.ReturnValue(popInt());
                         yield break;
                     }
                 case ("java/security/AccessController", "doPrivileged", "(Ljava/security/PrivilegedExceptionAction;)Ljava/lang/Object;"):
@@ -1363,7 +1368,7 @@ namespace JavaVirtualMachine
                         //DebugWriter.CallFuncDebugWrite(privilegedExceptionAction.ClassObject.Name, "run", Args);
                         yield return RunJavaFunction(method, args.ToArray());
                         //methodFrame.Execute returns to this NativeMethodFrame's stack
-                        JavaHelper.ReturnValue(PopInt());
+                        JavaHelper.ReturnValue(popInt());
                         yield break;
                     }
                 case ("java/security/AccessController", "getStackAccessControlContext", "()Ljava/security/AccessControlContext;"):
@@ -1717,7 +1722,7 @@ namespace JavaVirtualMachine
                         ClassFile constructorClassFile = ClassFileManager.GetClassFile("java/lang/reflect/Constructor");
                         MethodInfo getDeclaringClassMethod = constructorClassFile.MethodDictionary[("getDeclaringClass", "()Ljava/lang/Class;")];
                         yield return RunJavaFunction(getDeclaringClassMethod, constructorAddr);
-                        int declaringClassClassObjAddr = PopInt();
+                        int declaringClassClassObjAddr = popInt();
                         HeapObject declaringClassClassObj = Heap.GetObject(declaringClassClassObjAddr);
 
                         string declaringClassName = JavaHelper.ReadJavaString(declaringClassClassObj.GetField("name", "Ljava/lang/String;"));
@@ -1734,7 +1739,7 @@ namespace JavaVirtualMachine
                         //Get slot
                         MethodInfo getSlotMethod = constructorClassFile.MethodDictionary[("getSlot", "()I")];
                         yield return RunJavaFunction(getSlotMethod, constructorAddr);
-                        int slot = PopInt();
+                        int slot = popInt();
 
                         //Find constructor
                         MethodInfo constructorMethod = null;
@@ -1792,7 +1797,7 @@ namespace JavaVirtualMachine
                         yield break;
                     }
                 default:
-                    throw new MissingMethodException($"className == \"{className}\" && nameAndDescrthisFrame.IPtor == (\"{thisFuncName}\", \"{thisDescriptor}\")");
+                    throw new MissingMethodException($"(\"{className}\", \"{thisFuncName}\", \"{thisDescriptor}\")");
             }
         }
 
@@ -1800,18 +1805,12 @@ namespace JavaVirtualMachine
         {
             MethodFrame thisFrame = MethodFrameStack.Peek();
 
-            if (thisFrame.Method.ClassFile.Name == "java/util/Properties")
-            {
-
-            }
-
             ReadOnlyMemory<byte> code = thisFrame.Method.CodeAttribute.Code;
             Span<int> locals = GlobalStack.Slice(thisFrame.BaseOffset, thisFrame.Method.MaxLocals).Span;
 
             // Helper functions for operating the stack
 
             int peekInt() => thisFrame.Stack[thisFrame.SP - 1];
-
             int popInt() => thisFrame.Stack[--thisFrame.SP];
             long popLong()
             {
@@ -1821,7 +1820,6 @@ namespace JavaVirtualMachine
             }
             float popFloat() => JavaHelper.StoredFloatToFloat(popInt());
             double popDouble() => JavaHelper.StoredDoubleToDouble(popLong());
-
             void pushInt(int val) => thisFrame.Stack[thisFrame.SP++] = val;
             void pushLong(long val)
             {
@@ -1832,18 +1830,15 @@ namespace JavaVirtualMachine
             void pushFloat(float val) => pushInt(JavaHelper.FloatToStoredFloat(val));
             void pushDouble(double val) => pushLong(JavaHelper.DoubleToStoredDouble(val));
 
-
             // Helper functions for reading bytecode
 
             byte readByte() => code.Span[thisFrame.IP++];
-
             short readShort()
             {
                 byte chomp = code.Span[thisFrame.IP++]; //Larger byte
                 byte nibble = code.Span[thisFrame.IP++]; //Smaller byte
                 return (short)((chomp << 8) | nibble);
             }
-
             int readInt()
             {
                 byte byte0 = code.Span[thisFrame.IP++];
@@ -1866,8 +1861,9 @@ namespace JavaVirtualMachine
                     for (int i = 0; i < exceptionTable.Length; i++)
                     {
                         ExceptionHandlerInfo handler = exceptionTable[i];
-                        if ((handler.CatchType == 0 || exceptionCFile.IsSubClassOf(ClassFileManager.GetClassFile(handler.CatchClassType.Name))) &&
-                            thisFrame.IP >= handler.StartPc && thisFrame.IP < handler.EndPc)
+                        if ((handler.CatchType == 0 || exceptionCFile.IsSubClassOf(ClassFileManager.GetClassFile(handler.CatchClassType.Name)))
+                            && thisFrame.IP >= handler.StartPc
+                            && thisFrame.IP < handler.EndPc)
                         {
                             thisFrame.IP = handler.HandlerPc;
                             handled = true;
@@ -1883,10 +1879,8 @@ namespace JavaVirtualMachine
                     {
                         return null;
                     }
-                    
                 }
 
-                //TODO: Fix system.out.println
                 int oldIP = thisFrame.IP;
                 byte opCode = code.Span[thisFrame.IP++];
                 bool wide = opCode == (int)OpCodes.wide;
@@ -3245,6 +3239,47 @@ namespace JavaVirtualMachine
                         {
                             int objectRef = popInt();
                             // todo
+                        }
+                        break;
+                    case OpCodes.multianewarray:
+                        {
+                            short index = readShort();
+                            byte dimensions = readByte();
+                            CClassInfo type = (CClassInfo)thisFrame.Method.ClassFile.Constants[index];
+
+                            int[] counts = new int[dimensions];
+                            for (int i = dimensions - 1; i >= 0; i--)
+                            {
+                                counts[i] = popInt();
+                                if (counts[i] < 0)
+                                {
+                                    return ThrowJavaException("java/lang/NegativeArraySizeException");
+                                }
+                            }
+
+                            int topArray = Heap.CreateArray(4, counts[0], ClassObjectManager.GetClassObjectAddr(type));
+
+                            List<int> arrsToInit = new() { topArray };
+                            for (int i = 1; i < dimensions && counts[i] > 0; i++)
+                            {
+                                List<int> newArrsToInit = new();
+
+                                string typeName = type.Name.Substring(i); // Remove appropriate number of '[' from the name
+                                foreach (int arrAddr in arrsToInit)
+                                {
+                                    HeapArray array = Heap.GetArray(arrAddr);
+                                    for (int j = 0; j < counts[i - 1]; j++)
+                                    {
+                                        int newArray = Heap.CreateArray(4, counts[i], ClassObjectManager.GetClassObjectAddr(typeName));
+                                        newArrsToInit.Add(newArray);
+                                        array.SetItem(j, newArray);
+                                    }
+                                }
+                                
+                                arrsToInit = newArrsToInit;
+                            }
+
+                            pushInt(topArray);
                         }
                         break;
                     case OpCodes.ifnull:
